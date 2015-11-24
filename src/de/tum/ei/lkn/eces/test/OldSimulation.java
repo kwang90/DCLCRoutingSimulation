@@ -9,12 +9,13 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.TopologieOne;
 import de.tum.ei.lkn.eces.topologies.networktopologies.TopologieThree;
 import de.tum.ei.lkn.eces.topologies.networktopologies.TopologieTwo;
 
-public class RoutingSimulation {
+/* For old version of topologies */
+public class OldSimulation {
 
 	public static void main(String[] args) throws InterruptedException
 	{
-		boolean m_bShortTest = false;
-		boolean m_bLongTest = true;
+		boolean m_bShortTest = true;
+		boolean m_bLongTest = false;
 		boolean m_bLogTest = false;
 		
 		//Topologie settings
@@ -28,7 +29,7 @@ public class RoutingSimulation {
 		
 		//Routing Algorithm settings
 		RoutingAlgorithmSettings m_oRoutingSettings = new RoutingAlgorithmSettings();
-		m_oRoutingSettings.setRoutingAlgorithm(RoutingAlgorithm.BelmanFord);
+		m_oRoutingSettings.setRoutingAlgorithm(RoutingAlgorithm.Extended_SF);
 		
 		System.out.println("Start Simulation for " + m_oTopologieSettings.getTopologie().toString());
 		
