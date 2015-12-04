@@ -6,30 +6,26 @@ import java.util.Vector;
 import org.junit.Before;
 import org.junit.Test;
 
-import de.tum.ei.lkn.eces.dclc_routing.BelmanfordAlgorithm;
-import de.tum.ei.lkn.eces.dclc_routing.DCLCRouting;
-import de.tum.ei.lkn.eces.dclc_routing.ExtendedSFAlgorithm;
-import de.tum.ei.lkn.eces.dclc_routing.OldCBF;
-import de.tum.ei.lkn.eces.dclc_routing.SFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.datamodel.EdgePath;
 import de.tum.ei.lkn.eces.dclc_routing.datamodel.SDpare;
 import de.tum.ei.lkn.eces.framework.Controller;
 import de.tum.ei.lkn.eces.framework.Entity;
 import de.tum.ei.lkn.eces.framework.Mapper;
 import de.tum.ei.lkn.eces.framework.MapperManager;
+import de.tum.ei.lkn.eces.framework.exceptions.ComponentLocationException;
 import de.tum.ei.lkn.eces.graphsystem.GraphSystem;
-import de.tum.ei.lkn.eces.graphsystem.components.Edge;
-import de.tum.ei.lkn.eces.graphsystem.components.Graph;
 import de.tum.ei.lkn.eces.graphsystem.components.Node;
 import de.tum.ei.lkn.eces.networkcalculus.NCSystem;
-import de.tum.ei.lkn.eces.networkcalculus.components.NCCostFunction;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings.RoutingAlgorithm;
 import de.tum.ei.lkn.eces.networking.NetworkingSystem;
 import de.tum.ei.lkn.eces.networking.components.Delay;
+import de.tum.ei.lkn.eces.networking.components.Queue;
+import de.tum.ei.lkn.eces.networking.components.Rate;
 import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.networktopologies.OneRingFunnel;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
+import de.tum.ei.lkn.simulation.TrafficSettings;
 
 public class ASimulationTest {
 	
@@ -44,10 +40,8 @@ public class ASimulationTest {
 	NetworkTopologyInterface m_Topology;
 	Vector<Node> m_SendingNodes;
 	Vector<Node> m_ReceivingNodes;
-
-	Mapper<SDpare> sdMapper;
-	Mapper<Delay> delayMapper;
 	Mapper<EdgePath> edgePathMapper;
+	Vector<Entity[][]> entities;
 
 	@Before
 	public void setUp(){
@@ -56,11 +50,7 @@ public class ASimulationTest {
 		m_NetSys = new NetworkingSystem(controller, m_GraphSystem);
 		mm = new MapperManager(controller);
 		
-		sdMapper = new Mapper<SDpare>(SDpare.class);
-		delayMapper = new Mapper<Delay>(Delay.class);
 		edgePathMapper = new Mapper<EdgePath>(EdgePath.class);
-		sdMapper.setController(controller);
-		delayMapper.setController(controller);
 		edgePathMapper.setController(controller);
 
 		m_RASetting = new RoutingAlgorithmSettings();
@@ -78,43 +68,68 @@ public class ASimulationTest {
 		m_Topology.initTopology();
 		m_SendingNodes = m_Topology.getNodesAllowedToSend();
 		m_ReceivingNodes = m_Topology.getNodesAllowedToReceive();
-	}
-	
-	private void addSDPairRand(Entity flow){
-		Random r = new Random();
-		int src = 0, dest = 0;
-		double delay = 0;
-		do{
-			src = r.nextInt(m_SendingNodes.size());
-			dest = r.nextInt(m_ReceivingNodes.size());
-			delay = r.nextDouble();
-		}while(src == dest);
-		
+
 		Mapper.initThreadlocal();
-		sdMapper.attatchComponent(flow, new SDpare(m_SendingNodes.get(src), m_ReceivingNodes.get(dest)));
-		delayMapper.attatchComponent(flow, new Delay(delay));
+		entities = getEntireEntitySet(controller, m_SendingNodes, m_ReceivingNodes);
 		mm.process();
 	}
 	
 	@Test
-	public void randomRouting(){
-		Entity myFlow = controller.generateEntity();
+	public void randomRouting() throws ComponentLocationException, InterruptedException{
+		Random rand = new Random();
 		boolean _pathFound = false;
 		int counter = 1000;
 		do{
-			addSDPairRand(myFlow);
-			
+			Entity myFlow = entities.get(entities.size()-1)[0][rand.nextInt(3)];
 			Mapper.initThreadlocal();
 			_pathFound = m_NCSystem.ncRequest(myFlow);
 			mm.process();
-			
-			EdgePath path = edgePathMapper.get(myFlow);
-			String strPath = "Path Found: ";
-			for(Edge e : path.getPath()){
-				strPath += e.getDestination() + " --> ";
-			}
-			System.out.print(strPath);
+			//EdgePath path = edgePathMapper.get_wait(myFlow);
+			//String strPath = "Path Found: ";
+			//for(Edge e : path.getPath()){	strPath += e.getDestination() + " --> ";}
+			//System.out.print(strPath);
 			counter--;
 		}while(_pathFound && counter > 0);
+		System.out.print("1000 paths found");
+	}
+	
+	/** from TopologySimuator */
+	private Vector<Entity[][]> getEntireEntitySet(Controller controller, Vector<Node> qNodesAllowedToSend, Vector<Node> qNodesAllowedToReceive) {
+		// TODO Auto-generated method stub
+		Mapper<Delay> m_oMapperDelay = new Mapper<Delay>(Delay.class);
+		Mapper<Rate> m_oMapperRate = new Mapper<Rate>(Rate.class);
+		Mapper<Queue> m_oMapperQueue = new Mapper<Queue>(Queue.class);
+		Mapper<SDpare> m_oMapperSdPare = new Mapper<SDpare>(SDpare.class);
+		
+		m_oMapperDelay.setController(controller);
+		m_oMapperRate.setController(controller);
+		m_oMapperQueue.setController(controller);
+		m_oMapperSdPare.setController(controller);
+		
+		Vector<Entity[][]> entityVec = new Vector<Entity[][]>();
+		
+		double[][] traffic = TrafficSettings.getTraffic();
+		
+		for(int i = 0; i < qNodesAllowedToSend.size(); i++)
+		{
+			for(int k = 0; k < qNodesAllowedToReceive.size(); k++)
+			{
+				if(!qNodesAllowedToSend.get(i).equals(qNodesAllowedToReceive.get(k)))
+				{
+					Entity entity[][] = new Entity[1][7];
+					for(int j = 0; j < 7; j++)
+					{
+						entity[0][j] = controller.generateEntity();
+						m_oMapperSdPare.attatchComponent( 	entity[0][j],new SDpare(qNodesAllowedToSend.get(i),qNodesAllowedToReceive.get(k)));
+						m_oMapperDelay.attatchComponent(	entity[0][j],new Delay(traffic[j][2]));
+						m_oMapperRate.attatchComponent( 	entity[0][j],new Rate(traffic[j][0]));
+						m_oMapperQueue.attatchComponent(    entity[0][j],new Queue(traffic[j][1]));
+					}
+					entityVec.addElement(entity);
+				}
+			}
+		}
+		
+		return entityVec;
 	}
 }

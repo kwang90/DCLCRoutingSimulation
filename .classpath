@@ -24,5 +24,6 @@
 	<classpathentry kind="src" path="/eces.core"/>
 	<classpathentry kind="src" path="/eces.Networking"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="src" path="/eces.costfunctionoptimization"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
