@@ -30,6 +30,8 @@ import de.tum.ei.lkn.eces.networking.components.Queue;
 import de.tum.ei.lkn.eces.networking.components.Rate;
 import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.networktopologies.OneRingFunnel;
+import de.tum.ei.lkn.eces.topologies.networktopologies.TwoRingFunnel;
+import de.tum.ei.lkn.eces.topologies.networktopologies.TwoRingRandom;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 import de.tum.ei.lkn.simulation.TrafficSettings;
 
@@ -78,9 +80,9 @@ public class ASimulationTest {
 		m_NCSystem = new NCSystem(controller, m_GraphSystem, m_NetSys, m_RASetting, false);
 		
 		m_TopoRingSetting = new TopologyRingSettings();
-		m_TopoRingSetting.setRingSize(2);
-		m_TopoRingSetting.setBranchLength(2);
-		m_Topology = new OneRingFunnel(controller, m_NetSys, m_TopoRingSetting);
+		m_TopoRingSetting.setRingSize(5);
+		m_TopoRingSetting.setBranchLength(3);
+		topoSelection();
 		m_Topology.initGraph();
 		
 		Mapper.initThreadlocal();
@@ -127,14 +129,34 @@ public class ASimulationTest {
 			((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLDRun(controller, mstLD);
 		}
 	}
+
+	private void topoSelection() {
+		String top = "";
+		switch(new Random().nextInt(3)){
+			case 0:
+				m_Topology = new OneRingFunnel(controller, m_NetSys, m_TopoRingSetting);
+				top = "One Ring";
+				break;
+			case 1: 
+				m_Topology = new TwoRingFunnel(controller, m_NetSys, m_TopoRingSetting);
+				top = "Two Ring";
+				break;
+			case 2:
+				m_Topology = new TwoRingRandom(controller, m_NetSys, m_TopoRingSetting);
+				top = "Tow Ring Random";
+				break;
+		}
+		System.out.println("Topology: " + top);
+	}
 	
 	@Test
 	public void randomRouting() throws ComponentLocationException, InterruptedException{
 		Random rand = new Random();
 		boolean _pathFound = false;
-		int counter = 1000;
+		int counter = 10;
 		do{
-			Entity myFlow = entities.get(entities.size()-1)[0][rand.nextInt(3)];
+			Entity[][] entCube = entities.get(rand.nextInt(entities.size()));
+			Entity myFlow = entCube[0][rand.nextInt(4)];
 			Mapper.initThreadlocal();
 			Node src = m_MapperSdPare.get_optimistic(myFlow).getSource();
 			Node dest = m_MapperSdPare.get_optimistic(myFlow).getDestination();
@@ -151,7 +173,7 @@ public class ASimulationTest {
 			//System.out.print(strPath);
 			counter--;
 		}while(_pathFound && counter > 0);
-		System.out.print("1000 paths found");
+		//System.out.print("");
 	}
 	
 	/** from TopologySimuator */
