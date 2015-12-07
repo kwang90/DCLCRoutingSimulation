@@ -153,7 +153,7 @@ public class ASimulationTest {
 	public void randomRouting() throws ComponentLocationException, InterruptedException{
 		Random rand = new Random();
 		boolean _pathFound = false;
-		int counter = 10;
+		int counter = 100;
 		do{
 			Entity[][] entCube = entities.get(rand.nextInt(entities.size()));
 			Entity myFlow = entCube[0][rand.nextInt(4)];
@@ -167,13 +167,12 @@ public class ASimulationTest {
 			}
 			_pathFound = m_NCSystem.ncRequest(myFlow);
 			mm.process();
-			//EdgePath path = edgePathMapper.get_wait(myFlow);
-			//String strPath = "Path Found: ";
-			//for(Edge e : path.getPath()){	strPath += e.getDestination() + " --> ";}
-			//System.out.print(strPath);
+			EdgePath path = edgePathMapper.get_optimistic(myFlow);
+			String strPath = "Path Found: ";
+			for(Edge e : path.getPath()){	strPath += e.getDestination().getIdentifier() + " > ";}
+			System.out.println(strPath);
 			counter--;
 		}while(_pathFound && counter > 0);
-		//System.out.print("");
 	}
 	
 	/** from TopologySimuator */
