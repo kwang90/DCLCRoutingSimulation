@@ -80,9 +80,10 @@ public class ASimulationTest {
 		m_NCSystem = new NCSystem(controller, m_GraphSystem, m_NetSys, m_RASetting, false);
 		
 		m_TopoRingSetting = new TopologyRingSettings();
-		m_TopoRingSetting.setRingSize(5);
-		m_TopoRingSetting.setBranchLength(3);
-		topoSelection();
+		m_TopoRingSetting.setRingSize(15);
+		m_TopoRingSetting.setBranchLength(10);
+		//topoSelection(new Random().nextInt(3));
+		topoSelection(2);
 		m_Topology.initGraph();
 		
 		Mapper.initThreadlocal();
@@ -130,30 +131,12 @@ public class ASimulationTest {
 		}
 	}
 
-	private void topoSelection() {
-		String top = "";
-		switch(new Random().nextInt(3)){
-			case 0:
-				m_Topology = new OneRingFunnel(controller, m_NetSys, m_TopoRingSetting);
-				top = "One Ring";
-				break;
-			case 1: 
-				m_Topology = new TwoRingFunnel(controller, m_NetSys, m_TopoRingSetting);
-				top = "Two Ring";
-				break;
-			case 2:
-				m_Topology = new TwoRingRandom(controller, m_NetSys, m_TopoRingSetting);
-				top = "Tow Ring Random";
-				break;
-		}
-		System.out.println("Topology: " + top);
-	}
-	
 	@Test
 	public void randomRouting() throws ComponentLocationException, InterruptedException{
+		Long t0 = System.currentTimeMillis();
 		Random rand = new Random();
 		boolean _pathFound = false;
-		int counter = 100;
+		int counter = 0;
 		do{
 			Entity[][] entCube = entities.get(rand.nextInt(entities.size()));
 			Entity myFlow = entCube[0][rand.nextInt(4)];
@@ -168,11 +151,35 @@ public class ASimulationTest {
 			_pathFound = m_NCSystem.ncRequest(myFlow);
 			mm.process();
 			EdgePath path = edgePathMapper.get_optimistic(myFlow);
+			if(path == null)
+				continue;
 			String strPath = "Path Found: ";
 			for(Edge e : path.getPath()){	strPath += e.getDestination().getIdentifier() + " > ";}
 			System.out.println(strPath);
-			counter--;
-		}while(_pathFound && counter > 0);
+			counter++;
+		}while(_pathFound && counter < 10000);
+		Long runningTime = System.currentTimeMillis() - t0;
+		System.out.println(counter + " calculations running Time " + runningTime);
+	}
+	
+	/** topology selection */
+	private void topoSelection(int i) {
+		String top = "";
+		switch(i){
+			case 0:
+				m_Topology = new OneRingFunnel(controller, m_NetSys, m_TopoRingSetting);
+				top = "One Ring";
+				break;
+			case 1: 
+				m_Topology = new TwoRingFunnel(controller, m_NetSys, m_TopoRingSetting);
+				top = "Two Ring";
+				break;
+			case 2:
+				m_Topology = new TwoRingRandom(controller, m_NetSys, m_TopoRingSetting);
+				top = "Tow Ring Random";
+				break;
+		}
+		System.out.println("Topology: " + top);
 	}
 	
 	/** from TopologySimuator */
