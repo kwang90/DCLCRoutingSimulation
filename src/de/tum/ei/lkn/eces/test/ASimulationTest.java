@@ -25,15 +25,8 @@ import de.tum.ei.lkn.eces.networkcalculus.components.NCCostFunction;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings.RoutingAlgorithm;
 import de.tum.ei.lkn.eces.networking.NetworkingSystem;
-import de.tum.ei.lkn.eces.networking.components.Delay;
-import de.tum.ei.lkn.eces.networking.components.Queue;
-import de.tum.ei.lkn.eces.networking.components.Rate;
 import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
-import de.tum.ei.lkn.eces.topologies.networktopologies.OneRingFunnel;
-import de.tum.ei.lkn.eces.topologies.networktopologies.TwoRingFunnel;
-import de.tum.ei.lkn.eces.topologies.networktopologies.TwoRingRandom;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
-import de.tum.ei.lkn.simulation.TrafficSettings;
 
 public class ASimulationTest {
 	//Framework
@@ -58,6 +51,9 @@ public class ASimulationTest {
 	private GeneralDijkstra genDijkLD;
 	private GenMST mstLC;
 	private GenMST mstLD;
+	//Simulator
+	private RoutingSimulator simulator;
+	
 
 	@Before
 	public void setUp(){
@@ -65,6 +61,7 @@ public class ASimulationTest {
 		m_GraphSystem = new GraphSystem(controller);
 		m_NetSys = new NetworkingSystem(controller, m_GraphSystem);
 		mm = new MapperManager(controller);
+		simulator = new RoutingSimulator(controller, m_NetSys);
 		
 		edgePathMapper = new Mapper<EdgePath>(EdgePath.class);
 		m_MapperNcData = new Mapper<NCCostFunction>(NCCostFunction.class);
@@ -83,7 +80,7 @@ public class ASimulationTest {
 		m_TopoRingSetting.setRingSize(15);
 		m_TopoRingSetting.setBranchLength(10);
 		//topoSelection(new Random().nextInt(3));
-		topoSelection(2);
+		m_Topology = simulator.topoSelection(m_TopoRingSetting, 2);
 		m_Topology.initGraph();
 		
 		Mapper.initThreadlocal();
@@ -119,7 +116,7 @@ public class ASimulationTest {
 		m_ReceivingNodes = m_Topology.getNodesAllowedToReceive();
 		
 		Mapper.initThreadlocal();
-		entities = getEntireEntitySet(controller, m_SendingNodes, m_ReceivingNodes);
+		entities = simulator.getEntireEntitySet(m_SendingNodes, m_ReceivingNodes);
 		mm.process();
 		
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
@@ -133,7 +130,7 @@ public class ASimulationTest {
 
 	@Test
 	public void randomRouting() throws ComponentLocationException, InterruptedException{
-		Long t0 = System.currentTimeMillis();
+		Vector<Long> runningtimes = new Vector<Long>();
 		Random rand = new Random();
 		boolean _pathFound = false;
 		int counter = 0;
@@ -146,9 +143,12 @@ public class ASimulationTest {
 			System.out.println("src: " + src.getIdentifier() + "	--> dest : " + dest.getIdentifier());
 			//For ExtendedSF pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
+				long t0 = System.currentTimeMillis();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
+				runningtimes.add(System.currentTimeMillis() - t0); //Running time for pre-run
 			}
 			_pathFound = m_NCSystem.ncRequest(myFlow);
+			runningtimes.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
 			mm.process();
 			EdgePath path = edgePathMapper.get_optimistic(myFlow);
 			if(path == null)
@@ -157,68 +157,11 @@ public class ASimulationTest {
 			for(Edge e : path.getPath()){	strPath += e.getDestination().getIdentifier() + " > ";}
 			System.out.println(strPath);
 			counter++;
-		}while(_pathFound && counter < 10000);
-		Long runningTime = System.currentTimeMillis() - t0;
-		System.out.println(counter + " calculations running Time " + runningTime);
-	}
-	
-	/** topology selection */
-	private void topoSelection(int i) {
-		String top = "";
-		switch(i){
-			case 0:
-				m_Topology = new OneRingFunnel(controller, m_NetSys, m_TopoRingSetting);
-				top = "One Ring";
-				break;
-			case 1: 
-				m_Topology = new TwoRingFunnel(controller, m_NetSys, m_TopoRingSetting);
-				top = "Two Ring";
-				break;
-			case 2:
-				m_Topology = new TwoRingRandom(controller, m_NetSys, m_TopoRingSetting);
-				top = "Tow Ring Random";
-				break;
-		}
-		System.out.println("Topology: " + top);
-	}
-	
-	/** from TopologySimuator */
-	private Vector<Entity[][]> getEntireEntitySet(Controller controller, Vector<Node> qNodesAllowedToSend, Vector<Node> qNodesAllowedToReceive) {
-		// TODO Auto-generated method stub
-		Mapper<Delay> m_oMapperDelay = new Mapper<Delay>(Delay.class);
-		Mapper<Rate> m_oMapperRate = new Mapper<Rate>(Rate.class);
-		Mapper<Queue> m_oMapperQueue = new Mapper<Queue>(Queue.class);
-		Mapper<SDpare> m_oMapperSdPare = new Mapper<SDpare>(SDpare.class);
+		}while(_pathFound && counter < 1000);
 		
-		m_oMapperDelay.setController(controller);
-		m_oMapperRate.setController(controller);
-		m_oMapperQueue.setController(controller);
-		m_oMapperSdPare.setController(controller);
-		
-		Vector<Entity[][]> entityVec = new Vector<Entity[][]>();
-		
-		double[][] traffic = TrafficSettings.getTraffic();
-		
-		for(int i = 0; i < qNodesAllowedToSend.size(); i++)
-		{
-			for(int k = 0; k < qNodesAllowedToReceive.size(); k++)
-			{
-				if(!qNodesAllowedToSend.get(i).equals(qNodesAllowedToReceive.get(k)))
-				{
-					Entity entity[][] = new Entity[1][7];
-					for(int j = 0; j < 7; j++)
-					{
-						entity[0][j] = controller.generateEntity();
-						m_oMapperSdPare.attatchComponent( 	entity[0][j],new SDpare(qNodesAllowedToSend.get(i),qNodesAllowedToReceive.get(k)));
-						m_oMapperDelay.attatchComponent(	entity[0][j],new Delay(traffic[j][2]));
-						m_oMapperRate.attatchComponent( 	entity[0][j],new Rate(traffic[j][0]));
-						m_oMapperQueue.attatchComponent(    entity[0][j],new Queue(traffic[j][1]));
-					}
-					entityVec.addElement(entity);
-				}
-			}
-		}
-		
-		return entityVec;
+		long sum = 0;
+		for(long l : runningtimes)
+			sum += l;
+		System.out.println(counter + " calculations: " + "total running time: " + sum);
 	}
 }
