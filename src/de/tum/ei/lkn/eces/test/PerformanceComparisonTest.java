@@ -1,12 +1,14 @@
 package de.tum.ei.lkn.eces.test;
 
-import java.util.Random;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Vector;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import de.tum.ei.lkn.eces.dclc_routing.ConstrainedBellmanFord;
+import de.tum.ei.lkn.eces.dclc_routing.DCLCRouting;
 import de.tum.ei.lkn.eces.dclc_routing.ExtendedSFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.SFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.datamodel.EdgePath;
@@ -15,21 +17,20 @@ import de.tum.ei.lkn.eces.framework.Controller;
 import de.tum.ei.lkn.eces.framework.Entity;
 import de.tum.ei.lkn.eces.framework.Mapper;
 import de.tum.ei.lkn.eces.framework.MapperManager;
-import de.tum.ei.lkn.eces.framework.exceptions.ComponentLocationException;
 import de.tum.ei.lkn.eces.generaldijkstra.GeneralDijkstra;
 import de.tum.ei.lkn.eces.genmst.GenMST;
 import de.tum.ei.lkn.eces.graphsystem.GraphSystem;
 import de.tum.ei.lkn.eces.graphsystem.components.Edge;
-import de.tum.ei.lkn.eces.graphsystem.components.Node;
 import de.tum.ei.lkn.eces.networkcalculus.NCSystem;
 import de.tum.ei.lkn.eces.networkcalculus.components.NCCostFunction;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings.RoutingAlgorithm;
 import de.tum.ei.lkn.eces.networking.NetworkingSystem;
+import de.tum.ei.lkn.eces.networking.components.Delay;
 import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
-public class ASimulationTest {
+public class PerformanceComparisonTest {
 	//Framework
 	private Controller controller;
 	private GraphSystem m_GraphSystem;
@@ -40,13 +41,12 @@ public class ASimulationTest {
 	private TopologyRingSettings m_TopoRingSetting;
 	private RoutingAlgorithmSettings m_RASetting;
 	private NetworkTopologyInterface m_Topology;
-	private Vector<Node> m_SendingNodes;
-	private Vector<Node> m_ReceivingNodes;
-	private Vector<Entity[][]> entities;
+	private Vector<Entity> entities;
 	//Mapper
 	private Mapper<EdgePath> edgePathMapper;
 	private Mapper<NCCostFunction> m_MapperNcData;
-	private Mapper<SDpare> m_MapperSdPare;	
+	private Mapper<SDpare> m_MapperSdPare;
+	private Mapper<Delay> m_MapperDelay;
 	//For SF Routing
 	private GeneralDijkstra genDijkLC;
 	private GeneralDijkstra genDijkLD;
@@ -57,6 +57,7 @@ public class ASimulationTest {
 	//Routing Algorithm
 	RoutingAlgorithm ra = RoutingAlgorithm.BelmanFord;
 	ConstrainedBellmanFord<NCCostFunction> optimalSolution;
+	DCLCRouting<NCCostFunction> test_ra;
 
 	@Before
 	public void setUp(){
@@ -69,9 +70,11 @@ public class ASimulationTest {
 		edgePathMapper = new Mapper<EdgePath>(EdgePath.class);
 		m_MapperNcData = new Mapper<NCCostFunction>(NCCostFunction.class);
 		m_MapperSdPare = new Mapper<SDpare>(SDpare.class);
+		m_MapperDelay = new Mapper<Delay>(Delay.class);
 		edgePathMapper.setController(controller);
 		m_MapperNcData.setController(controller);
 		m_MapperSdPare.setController(controller);
+		m_MapperDelay.setController(controller);
 
 		Mapper.initThreadlocal();
 
@@ -88,6 +91,7 @@ public class ASimulationTest {
 		
 		Mapper.initThreadlocal();
 		m_NCSystem.initRoutingAlgorithm(m_Topology.getQGraph());
+		simulator.initRoutingAlgorithm(ra, test_ra, m_Topology.getQGraph());
 		optimalSolution = new ConstrainedBellmanFord<NCCostFunction>(controller, NCCostFunction.class);
 		mm.process();
 		
@@ -97,7 +101,6 @@ public class ASimulationTest {
 			genDijkLC = new GeneralDijkstra(controller, m_Topology.getQGraph()) {
 				@Override
 				public double getEdgeCost(Edge nxtEdge) {
-					// TODO Auto-generated method stub
 					return m_MapperNcData.get_optimistic(nxtEdge.getEntity()).getCosts(controller.generateEntity(), null);
 				}
 			};
@@ -105,7 +108,6 @@ public class ASimulationTest {
 			genDijkLD = new GeneralDijkstra(controller, m_Topology.getQGraph()) {
 				@Override
 				public double getEdgeCost(Edge nxtEdge) {
-					// TODO Auto-generated method stub
 					return m_MapperNcData.get_optimistic(nxtEdge.getEntity()).getDelay(controller.generateEntity(), null);
 				}
 			};
@@ -116,56 +118,27 @@ public class ASimulationTest {
 		}
 		
 		m_Topology.initTopology();
-		m_SendingNodes = m_Topology.getNodesAllowedToSend();
-		m_ReceivingNodes = m_Topology.getNodesAllowedToReceive();
 		
 		Mapper.initThreadlocal();
-		entities = simulator.getEntireEntitySet(m_SendingNodes, m_ReceivingNodes);
+		entities = simulator.entitiesGenerator(m_Topology);
 		mm.process();
 		
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
-			((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
+			((SFAlgorithm<NCCostFunction>)test_ra).preSF(controller, mstLC, mstLD);
 		}
 		
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
-			((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLDRun(controller, mstLD);
+			((ExtendedSFAlgorithm<NCCostFunction>)test_ra).preLDRun(controller, mstLD);
 		}
 	}
 
 	@Test
-	public void randomRouting() throws ComponentLocationException, InterruptedException{
-		Vector<Long> runningtimes = new Vector<Long>();
-		Random rand = new Random();
-		boolean _pathFound = false;
-		int counter = 0;
-		do{
-			Entity[][] entCube = entities.get(rand.nextInt(entities.size()));
-			Entity myFlow = entCube[0][rand.nextInt(4)];
+	public void runSimulation(){
+		for(Entity e: entities){
 			Mapper.initThreadlocal();
-			Node src = m_MapperSdPare.get_optimistic(myFlow).getSource();
-			Node dest = m_MapperSdPare.get_optimistic(myFlow).getDestination();
-			System.out.println("src: " + src.getIdentifier() + "	--> dest : " + dest.getIdentifier());
-			//For ExtendedSF pre-run
-			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
-				long t0 = System.currentTimeMillis();
-				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
-				runningtimes.add(System.currentTimeMillis() - t0); //Running time for pre-run
-			}
-			_pathFound = m_NCSystem.ncRequest(myFlow);
-			runningtimes.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
+			boolean _pathFound = test_ra.addRoute(e);
 			mm.process();
-			EdgePath path = edgePathMapper.get_optimistic(myFlow);
-			if(path == null)
-				continue;
-			String strPath = "Path Found: ";
-			for(Edge e : path.getPath()){	strPath += e.getDestination().getIdentifier() + " > ";}
-			System.out.println(strPath);
-			counter++;
-		}while(_pathFound && counter < 1000);
-		
-		long sum = 0;
-		for(long l : runningtimes)
-			sum += l;
-		System.out.println(counter + " calculations: " + "total running time: " + sum);
+			assertTrue(_pathFound);
+		}
 	}
 }
