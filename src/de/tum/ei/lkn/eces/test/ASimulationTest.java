@@ -80,9 +80,8 @@ public class ASimulationTest {
 		m_NCSystem = new NCSystem(controller, m_GraphSystem, m_NetSys, m_RASetting, false);
 		
 		m_TopoRingSetting = new TopologyRingSettings();
-		m_TopoRingSetting.setRingSize(15);
-		m_TopoRingSetting.setBranchLength(10);
-		//topoSelection(new Random().nextInt(3));
+		m_TopoRingSetting.setRingSize(3);
+		m_TopoRingSetting.setBranchLength(2);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, 2);
 		m_Topology.initGraph();
 		
@@ -97,7 +96,6 @@ public class ASimulationTest {
 			genDijkLC = new GeneralDijkstra(controller, m_Topology.getQGraph()) {
 				@Override
 				public double getEdgeCost(Edge nxtEdge) {
-					// TODO Auto-generated method stub
 					return m_MapperNcData.get_optimistic(nxtEdge.getEntity()).getCosts(controller.generateEntity(), null);
 				}
 			};
@@ -105,7 +103,6 @@ public class ASimulationTest {
 			genDijkLD = new GeneralDijkstra(controller, m_Topology.getQGraph()) {
 				@Override
 				public double getEdgeCost(Edge nxtEdge) {
-					// TODO Auto-generated method stub
 					return m_MapperNcData.get_optimistic(nxtEdge.getEntity()).getDelay(controller.generateEntity(), null);
 				}
 			};

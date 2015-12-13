@@ -1,7 +1,5 @@
 package de.tum.ei.lkn.eces.test;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.Vector;
 
 import org.junit.Before;
@@ -21,6 +19,7 @@ import de.tum.ei.lkn.eces.generaldijkstra.GeneralDijkstra;
 import de.tum.ei.lkn.eces.genmst.GenMST;
 import de.tum.ei.lkn.eces.graphsystem.GraphSystem;
 import de.tum.ei.lkn.eces.graphsystem.components.Edge;
+import de.tum.ei.lkn.eces.graphsystem.components.Node;
 import de.tum.ei.lkn.eces.networkcalculus.NCSystem;
 import de.tum.ei.lkn.eces.networkcalculus.components.NCCostFunction;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings;
@@ -55,7 +54,7 @@ public class PerformanceComparisonTest {
 	//Simulator
 	private RoutingSimulator simulator;
 	//Routing Algorithm
-	RoutingAlgorithm ra = RoutingAlgorithm.BelmanFord;
+	RoutingAlgorithm ra = RoutingAlgorithm.CDijkstra;
 	ConstrainedBellmanFord<NCCostFunction> optimalSolution;
 	DCLCRouting<NCCostFunction> test_ra;
 
@@ -83,15 +82,14 @@ public class PerformanceComparisonTest {
 		m_NCSystem = new NCSystem(controller, m_GraphSystem, m_NetSys, m_RASetting, false);
 		
 		m_TopoRingSetting = new TopologyRingSettings();
-		m_TopoRingSetting.setRingSize(15);
-		m_TopoRingSetting.setBranchLength(10);
-		//topoSelection(new Random().nextInt(3));
+		m_TopoRingSetting.setRingSize(2);
+		m_TopoRingSetting.setBranchLength(2);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, 2);
 		m_Topology.initGraph();
 		
 		Mapper.initThreadlocal();
 		m_NCSystem.initRoutingAlgorithm(m_Topology.getQGraph());
-		simulator.initRoutingAlgorithm(ra, test_ra, m_Topology.getQGraph());
+		test_ra = simulator.initRoutingAlgorithm(m_Topology, ra);
 		optimalSolution = new ConstrainedBellmanFord<NCCostFunction>(controller, NCCostFunction.class);
 		mm.process();
 		
@@ -119,10 +117,6 @@ public class PerformanceComparisonTest {
 		
 		m_Topology.initTopology();
 		
-		Mapper.initThreadlocal();
-		entities = simulator.entitiesGenerator(m_Topology);
-		mm.process();
-		
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
 			((SFAlgorithm<NCCostFunction>)test_ra).preSF(controller, mstLC, mstLD);
 		}
@@ -134,11 +128,34 @@ public class PerformanceComparisonTest {
 
 	@Test
 	public void runSimulation(){
-		for(Entity e: entities){
+		Mapper.initThreadlocal();
+		entities = simulator.entitiesGenerator(m_Topology, 10);
+		mm.process();
+		int cntr = 0;
+		for(Entity e: entities){			
 			Mapper.initThreadlocal();
-			boolean _pathFound = test_ra.addRoute(e);
+			Node src = m_MapperSdPare.get_optimistic(e).getSource();
+			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
+			System.out.println("src: " + src.getIdentifier() + "	--> dest : " + dest.getIdentifier());
+			//For ExtendedSF pre-run
+			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
+				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
+			}
+			boolean _pathFound = m_NCSystem.ncRequest(e);
 			mm.process();
-			assertTrue(_pathFound);
+			//assertTrue(_pathFound);
+			if(!_pathFound)
+				continue;
+			Mapper.initThreadlocal();
+			EdgePath path = edgePathMapper.get(e);
+			mm.process();
+			if(path != null){
+				for(Edge edge : path.getPath()){
+					System.out.print(edge.getSource().getIdentifier() + "->" + edge.getDestination().getIdentifier() + "..");
+				}
+				cntr++;
+				System.out.println("		Counter : " + cntr);
+			}
 		}
 	}
 }

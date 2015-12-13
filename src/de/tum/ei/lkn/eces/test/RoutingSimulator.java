@@ -14,7 +14,6 @@ import de.tum.ei.lkn.eces.dclc_routing.datamodel.SDpare;
 import de.tum.ei.lkn.eces.framework.Controller;
 import de.tum.ei.lkn.eces.framework.Entity;
 import de.tum.ei.lkn.eces.framework.Mapper;
-import de.tum.ei.lkn.eces.graphsystem.components.Graph;
 import de.tum.ei.lkn.eces.graphsystem.components.Node;
 import de.tum.ei.lkn.eces.networkcalculus.components.NCCostFunction;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings.RoutingAlgorithm;
@@ -39,7 +38,7 @@ public class RoutingSimulator {
 		this.m_NetSys = m_NetSys;
 	}
 	
-	public Vector<Entity> entitiesGenerator(NetworkTopologyInterface m_Topology){
+	public Vector<Entity> entitiesGenerator(NetworkTopologyInterface m_Topology, int numberOfEntities){
 		Vector<Entity> entitySet = new Vector<Entity>();
 		Vector<Entity[][]> entCube = getEntireEntitySet(m_Topology.getNodesAllowedToSend(), m_Topology.getNodesAllowedToReceive());
 		for(Entity[][] eArray : entCube){
@@ -47,13 +46,12 @@ public class RoutingSimulator {
 				entitySet.addElement(eArray[0][i]);
 			}
 		}
-		//randomly pick 1000 entities
+		//randomly pick entities
 		Vector<Entity> set = new Vector<Entity>();
 		Random r = new Random();
-		for(int i = 0; i< 1000; i++){
+		for(int i = 0; i< numberOfEntities; i++){
 			int rand = r.nextInt(entitySet.size()-1);
 			set.add(entitySet.get(rand));
-			entitySet.remove(rand);
 		}			
 		return set;
 	}
@@ -83,6 +81,32 @@ public class RoutingSimulator {
 		}
 		System.out.println("Topology: " + top);
 		return m_Topology;
+	}
+	
+	
+	public DCLCRouting<NCCostFunction> initRoutingAlgorithm(NetworkTopologyInterface m_Topology, RoutingAlgorithm ra) {
+		DCLCRouting<NCCostFunction> test_ra;
+		switch(ra){
+			case BelmanFord:
+				test_ra = new ConstrainedBellmanFord<NCCostFunction>(controller, NCCostFunction.class);
+				break;
+			case BelmanFordOld:
+				test_ra = new OldCBF<NCCostFunction>(controller, NCCostFunction.class);
+				break;
+			case SF_DCLC:
+				test_ra = new SFAlgorithm<NCCostFunction>(controller, NCCostFunction.class, m_Topology.getQGraph());
+				break;
+			case Extended_SF:
+				test_ra = new ExtendedSFAlgorithm<NCCostFunction>(controller, NCCostFunction.class, m_Topology.getQGraph());
+				break;
+			case CDijkstra:
+				test_ra = new ConstrainedDijkstraAlgorithm<NCCostFunction>(controller, NCCostFunction.class);
+				break;
+			default:			
+				test_ra = new ConstrainedBellmanFord<NCCostFunction>(controller, NCCostFunction.class);
+				break;
+		}
+		return test_ra;
 	}
 	
 	/** from TopologySimuator */
@@ -123,30 +147,6 @@ public class RoutingSimulator {
 		}
 		
 		return entityVec;
-	}
-
-
-	public void initRoutingAlgorithm(RoutingAlgorithm ra, DCLCRouting<? extends DCLCData> m_oAlgorithm, Graph qnet) {
-		switch(ra){
-			case BelmanFord:
-				m_oAlgorithm = new ConstrainedBellmanFord<NCCostFunction>(controller, NCCostFunction.class);
-				break;
-			case BelmanFordOld:
-				m_oAlgorithm = new OldCBF<NCCostFunction>(controller, NCCostFunction.class);
-				break;
-			case SF_DCLC:
-				m_oAlgorithm = new SFAlgorithm<NCCostFunction>(controller, NCCostFunction.class, qnet);
-				break;
-			case Extended_SF:
-				m_oAlgorithm = new ExtendedSFAlgorithm<NCCostFunction>(controller, NCCostFunction.class, qnet);
-				break;
-			case CDijkstra:
-				m_oAlgorithm = new ConstrainedDijkstraAlgorithm<NCCostFunction>(controller, NCCostFunction.class);
-				break;
-			default:			
-				m_oAlgorithm = new ConstrainedBellmanFord<NCCostFunction>(controller, NCCostFunction.class);
-				break;
-		}
 	}
 	
 	public void runSimulation(DCLCRouting<? extends DCLCData> algorithm, 
