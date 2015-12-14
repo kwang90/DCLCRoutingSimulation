@@ -8,6 +8,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import de.tum.ei.lkn.eces.dclc_routing.ConstrainedBellmanFord;
+import de.tum.ei.lkn.eces.dclc_routing.ConstrainedDijkstraAlgorithm;
+import de.tum.ei.lkn.eces.dclc_routing.DCLCRouting;
 import de.tum.ei.lkn.eces.dclc_routing.ExtendedSFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.SFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.datamodel.EdgePath;
@@ -56,7 +58,7 @@ public class ASimulationTest {
 	private RoutingSimulator simulator;
 	//Routing Algorithm
 	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
-	ConstrainedBellmanFord<NCCostFunction> optimalSolution;
+	DCLCRouting<NCCostFunction> optimalSolution;
 
 	@Before
 	public void setUp(){
@@ -80,14 +82,14 @@ public class ASimulationTest {
 		m_NCSystem = new NCSystem(controller, m_GraphSystem, m_NetSys, m_RASetting, false);
 		
 		m_TopoRingSetting = new TopologyRingSettings();
-		m_TopoRingSetting.setRingSize(3);
-		m_TopoRingSetting.setBranchLength(2);
+		m_TopoRingSetting.setRingSize(15);
+		m_TopoRingSetting.setBranchLength(10);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, 2);
 		m_Topology.initGraph();
 		
 		Mapper.initThreadlocal();
 		m_NCSystem.initRoutingAlgorithm(m_Topology.getQGraph());
-		optimalSolution = new ConstrainedBellmanFord<NCCostFunction>(controller, NCCostFunction.class);
+		optimalSolution = new ConstrainedDijkstraAlgorithm<NCCostFunction>(controller, NCCostFunction.class);
 		mm.process();
 		
 		//Settings for SF and Extended_SF
@@ -131,32 +133,45 @@ public class ASimulationTest {
 	public void randomRouting() throws ComponentLocationException, InterruptedException{
 		Vector<Long> runningtimes = new Vector<Long>();
 		int counter = 0;
-		for(Entity myFlow : entities){
+		for(Entity e : entities){
 			Mapper.initThreadlocal();
-			Node src = m_MapperSdPare.get_optimistic(myFlow).getSource();
-			Node dest = m_MapperSdPare.get_optimistic(myFlow).getDestination();
-			System.out.println("src: " + src.getIdentifier() + "	--> dest : " + dest.getIdentifier());
+			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
 			//For ExtendedSF pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
 				long t0 = System.currentTimeMillis();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
 				runningtimes.add(System.currentTimeMillis() - t0); //Running time for pre-run
 			}
-			assertTrue(m_NCSystem.ncRequest(myFlow));
+			assertTrue(m_NCSystem.ncRequest(e));
 			runningtimes.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
 			mm.process();
-			EdgePath path = edgePathMapper.get_optimistic(myFlow);
+			EdgePath path = edgePathMapper.get_optimistic(e);
 			if(path == null)
 				continue;
-			String strPath = "Path Found: ";
-			for(Edge e : path.getPath()){	strPath += e.getDestination().getIdentifier() + " > ";}
-			System.out.println(strPath);
 			counter++;
 
 		}
 		long sum = 0;
 		for(long l : runningtimes)
 			sum += l;
-		System.out.println(counter + " calculations: " + "total running time: " + sum);
+		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sum);
+		
+		//run optimal solution for comparison
+		Vector<Long> runningtimes_ = new Vector<Long>();
+		int counter_ = 0;
+		for(Entity e : entities){
+			Mapper.initThreadlocal();
+			assertTrue(optimalSolution.addRoute(e));
+			runningtimes_.add(optimalSolution.algrRunningTime()); // Running time for addflow
+			mm.process();
+			EdgePath path = edgePathMapper.get_optimistic(e);
+			if(path == null)
+				continue;
+			counter_++;
+		}
+		long sum_ = 0;
+		for(long l : runningtimes_)
+			sum_ += l;
+		System.out.println("CBF run " + counter_ +	" calculations: " + "total running time: " + sum_);
 	}
 }
