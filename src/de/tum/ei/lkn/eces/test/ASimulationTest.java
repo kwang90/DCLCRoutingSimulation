@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Vector;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import de.tum.ei.lkn.eces.dclc_routing.ConstrainedBellmanFord;
@@ -33,35 +34,35 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
-	private int NUMBER_OF_ENTITIES = 1000;
+	private static int NUMBER_OF_ENTITIES = 1000;
 	//Framework
-	private Controller controller;
-	private GraphSystem m_GraphSystem;
-	private NetworkingSystem m_NetSys;
-	private MapperManager mm;
-	private NCSystem m_NCSystem;
+	private static Controller controller;
+	private static GraphSystem m_GraphSystem;
+	private static NetworkingSystem m_NetSys;
+	private static MapperManager mm;
+	private static NCSystem m_NCSystem;
 	//Topology
-	private TopologyRingSettings m_TopoRingSetting;
-	private RoutingAlgorithmSettings m_RASetting;
-	private NetworkTopologyInterface m_Topology;
-	private Vector<Entity> entities;
+	private static TopologyRingSettings m_TopoRingSetting;
+	private static RoutingAlgorithmSettings m_RASetting;
+	private static NetworkTopologyInterface m_Topology;
+	private static Vector<Entity> entities;
 	//Mapper
-	private Mapper<EdgePath> edgePathMapper;
-	private Mapper<NCCostFunction> m_MapperNcData;
-	private Mapper<SDpare> m_MapperSdPare;	
+	private static Mapper<EdgePath> edgePathMapper;
+	private static Mapper<NCCostFunction> m_MapperNcData;
+	private static Mapper<SDpare> m_MapperSdPare;	
 	//For SF Routing
-	private GeneralDijkstra genDijkLC;
-	private GeneralDijkstra genDijkLD;
-	private GenMST mstLC;
-	private GenMST mstLD;
+	private static GeneralDijkstra genDijkLC;
+	private static GeneralDijkstra genDijkLD;
+	private static GenMST mstLC;
+	private static GenMST mstLD;
 	//Simulator
-	private RoutingSimulator simulator;
+	private static RoutingSimulator simulator;
 	//Routing Algorithm
-	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
-	DCLCRouting<NCCostFunction> optimalSolution;
+	static RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+	static ConstrainedBellmanFord<NCCostFunction> optimalSolution;
 
-	@Before
-	public void setUp(){
+	@BeforeClass
+	public static void setUp(){
 		controller = new Controller();
 		m_GraphSystem = new GraphSystem(controller);
 		m_NetSys = new NetworkingSystem(controller, m_GraphSystem);
@@ -89,7 +90,7 @@ public class ASimulationTest {
 		
 		Mapper.initThreadlocal();
 		m_NCSystem.initRoutingAlgorithm(m_Topology.getQGraph());
-		optimalSolution = new ConstrainedDijkstraAlgorithm<NCCostFunction>(controller, NCCostFunction.class);
+		optimalSolution = new ConstrainedBellmanFord<NCCostFunction>(controller, NCCostFunction.class);
 		mm.process();
 		
 		//Settings for SF and Extended_SF
@@ -130,9 +131,11 @@ public class ASimulationTest {
 	}
 
 	@Test
-	public void randomRouting() throws ComponentLocationException, InterruptedException{
+	public void A_RoutingTest() throws ComponentLocationException, InterruptedException{
 		Vector<Long> runningtimes = new Vector<Long>();
 		int counter = 0;
+		int cumm_cost = 0;
+		int cumm_delay = 0;
 		for(Entity e : entities){
 			Mapper.initThreadlocal();
 			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
@@ -148,17 +151,24 @@ public class ASimulationTest {
 			EdgePath path = edgePathMapper.get_optimistic(e);
 			if(path == null)
 				continue;
+			cumm_cost += path.getCosts();
+			cumm_delay += path.getTime();
 			counter++;
-
 		}
 		long sum = 0;
 		for(long l : runningtimes)
 			sum += l;
 		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sum);
-		
+		System.out.println("Cost : " + cumm_cost + "		Delay: " + cumm_delay);
+	}
+	
+	@Test
+	public void cbfRun(){
 		//run optimal solution for comparison
 		Vector<Long> runningtimes_ = new Vector<Long>();
 		int counter_ = 0;
+		int cumm_cost_ = 0;
+		int cumm_delay_ = 0;
 		for(Entity e : entities){
 			Mapper.initThreadlocal();
 			assertTrue(optimalSolution.addRoute(e));
@@ -167,11 +177,14 @@ public class ASimulationTest {
 			EdgePath path = edgePathMapper.get_optimistic(e);
 			if(path == null)
 				continue;
+			cumm_cost_ += path.getCosts();
+			cumm_delay_ += path.getTime();
 			counter_++;
 		}
 		long sum_ = 0;
 		for(long l : runningtimes_)
 			sum_ += l;
 		System.out.println("CBF run " + counter_ +	" calculations: " + "total running time: " + sum_);
+		System.out.println("Cost : " + cumm_cost_ + "		Delay: " + cumm_delay_);
 	}
 }
