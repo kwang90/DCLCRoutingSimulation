@@ -1,5 +1,7 @@
 package de.tum.ei.lkn.eces.test;
 
+import static org.junit.Assert.assertTrue;
+
 import java.util.Vector;
 
 import org.junit.Before;
@@ -54,7 +56,7 @@ public class PerformanceComparisonTest {
 	//Simulator
 	private RoutingSimulator simulator;
 	//Routing Algorithm
-	RoutingAlgorithm ra = RoutingAlgorithm.CDijkstra;
+	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 	ConstrainedBellmanFord<NCCostFunction> optimalSolution;
 	DCLCRouting<NCCostFunction> test_ra;
 

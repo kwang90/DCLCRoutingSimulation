@@ -1,6 +1,7 @@
 package de.tum.ei.lkn.eces.test;
 
-import java.util.Random;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Vector;
 
 import org.junit.Before;
@@ -30,6 +31,7 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
+	private int NUMBER_OF_ENTITIES = 1000;
 	//Framework
 	private Controller controller;
 	private GraphSystem m_GraphSystem;
@@ -40,9 +42,7 @@ public class ASimulationTest {
 	private TopologyRingSettings m_TopoRingSetting;
 	private RoutingAlgorithmSettings m_RASetting;
 	private NetworkTopologyInterface m_Topology;
-	private Vector<Node> m_SendingNodes;
-	private Vector<Node> m_ReceivingNodes;
-	private Vector<Entity[][]> entities;
+	private Vector<Entity> entities;
 	//Mapper
 	private Mapper<EdgePath> edgePathMapper;
 	private Mapper<NCCostFunction> m_MapperNcData;
@@ -55,7 +55,7 @@ public class ASimulationTest {
 	//Simulator
 	private RoutingSimulator simulator;
 	//Routing Algorithm
-	RoutingAlgorithm ra = RoutingAlgorithm.BelmanFord;
+	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 	ConstrainedBellmanFord<NCCostFunction> optimalSolution;
 
 	@Before
@@ -113,11 +113,9 @@ public class ASimulationTest {
 		}
 		
 		m_Topology.initTopology();
-		m_SendingNodes = m_Topology.getNodesAllowedToSend();
-		m_ReceivingNodes = m_Topology.getNodesAllowedToReceive();
 		
 		Mapper.initThreadlocal();
-		entities = simulator.getEntireEntitySet(m_SendingNodes, m_ReceivingNodes);
+		entities = simulator.entitiesGenerator(m_Topology, NUMBER_OF_ENTITIES);
 		mm.process();
 		
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
@@ -132,12 +130,8 @@ public class ASimulationTest {
 	@Test
 	public void randomRouting() throws ComponentLocationException, InterruptedException{
 		Vector<Long> runningtimes = new Vector<Long>();
-		Random rand = new Random();
-		boolean _pathFound = false;
 		int counter = 0;
-		do{
-			Entity[][] entCube = entities.get(rand.nextInt(entities.size()));
-			Entity myFlow = entCube[0][rand.nextInt(4)];
+		for(Entity myFlow : entities){
 			Mapper.initThreadlocal();
 			Node src = m_MapperSdPare.get_optimistic(myFlow).getSource();
 			Node dest = m_MapperSdPare.get_optimistic(myFlow).getDestination();
@@ -148,7 +142,7 @@ public class ASimulationTest {
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
 				runningtimes.add(System.currentTimeMillis() - t0); //Running time for pre-run
 			}
-			_pathFound = m_NCSystem.ncRequest(myFlow);
+			assertTrue(m_NCSystem.ncRequest(myFlow));
 			runningtimes.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
 			mm.process();
 			EdgePath path = edgePathMapper.get_optimistic(myFlow);
@@ -158,8 +152,8 @@ public class ASimulationTest {
 			for(Edge e : path.getPath()){	strPath += e.getDestination().getIdentifier() + " > ";}
 			System.out.println(strPath);
 			counter++;
-		}while(_pathFound && counter < 1000);
-		
+
+		}
 		long sum = 0;
 		for(long l : runningtimes)
 			sum += l;

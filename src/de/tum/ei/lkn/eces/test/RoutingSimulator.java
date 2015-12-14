@@ -42,7 +42,7 @@ public class RoutingSimulator {
 		Vector<Entity> entitySet = new Vector<Entity>();
 		Vector<Entity[][]> entCube = getEntireEntitySet(m_Topology.getNodesAllowedToSend(), m_Topology.getNodesAllowedToReceive());
 		for(Entity[][] eArray : entCube){
-			for(int i = 0; i < eArray[0].length; i++){
+			for(int i = 0; i < 4; i++){
 				entitySet.addElement(eArray[0][i]);
 			}
 		}
