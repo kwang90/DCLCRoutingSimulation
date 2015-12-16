@@ -2,15 +2,13 @@ package de.tum.ei.lkn.eces.test;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.Random;
 import java.util.Vector;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import de.tum.ei.lkn.eces.dclc_routing.ConstrainedBellmanFord;
-import de.tum.ei.lkn.eces.dclc_routing.ConstrainedDijkstraAlgorithm;
-import de.tum.ei.lkn.eces.dclc_routing.DCLCRouting;
 import de.tum.ei.lkn.eces.dclc_routing.ExtendedSFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.SFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.datamodel.EdgePath;
@@ -30,39 +28,43 @@ import de.tum.ei.lkn.eces.networkcalculus.components.NCCostFunction;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings;
 import de.tum.ei.lkn.eces.networkcalculus.genetic.RoutingAlgorithmSettings.RoutingAlgorithm;
 import de.tum.ei.lkn.eces.networking.NetworkingSystem;
+import de.tum.ei.lkn.eces.networking.components.Delay;
 import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
-	private static int NUMBER_OF_ENTITIES = 1000;
+	RoutingAlgorithm ra = RoutingAlgorithm.SF_DCLC;
+	private int RING_SIZE = 15;
+	private int BRANCH_LENTH = 10;
+	private int NUMBER_OF_ENTITIES = 1000;
 	//Framework
-	private static Controller controller;
-	private static GraphSystem m_GraphSystem;
-	private static NetworkingSystem m_NetSys;
-	private static MapperManager mm;
-	private static NCSystem m_NCSystem;
+	private Controller controller;
+	private GraphSystem m_GraphSystem;
+	private NetworkingSystem m_NetSys;
+	private MapperManager mm;
+	private NCSystem m_NCSystem;
 	//Topology
-	private static TopologyRingSettings m_TopoRingSetting;
-	private static RoutingAlgorithmSettings m_RASetting;
-	private static NetworkTopologyInterface m_Topology;
-	private static Vector<Entity> entities;
+	private TopologyRingSettings m_TopoRingSetting;
+	private RoutingAlgorithmSettings m_RASetting;
+	private NetworkTopologyInterface m_Topology;
+	private Vector<Entity> entities;
 	//Mapper
-	private static Mapper<EdgePath> edgePathMapper;
-	private static Mapper<NCCostFunction> m_MapperNcData;
-	private static Mapper<SDpare> m_MapperSdPare;	
+	private Mapper<EdgePath> edgePathMapper;
+	private Mapper<NCCostFunction> m_MapperNcData;
+	private Mapper<SDpare> m_MapperSdPare;
+	private Mapper<Delay> m_MapperDelay;
 	//For SF Routing
-	private static GeneralDijkstra genDijkLC;
-	private static GeneralDijkstra genDijkLD;
-	private static GenMST mstLC;
-	private static GenMST mstLD;
+	private GeneralDijkstra genDijkLC;
+	private GeneralDijkstra genDijkLD;
+	private GenMST mstLC;
+	private GenMST mstLD;
 	//Simulator
-	private static RoutingSimulator simulator;
-	//Routing Algorithm
-	static RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
-	static ConstrainedBellmanFord<NCCostFunction> optimalSolution;
+	private RoutingSimulator simulator;
+	//CBF
+	ConstrainedBellmanFord<NCCostFunction> optimalSolution;
 
-	@BeforeClass
-	public static void setUp(){
+	@Before
+	public void setUp(){
 		controller = new Controller();
 		m_GraphSystem = new GraphSystem(controller);
 		m_NetSys = new NetworkingSystem(controller, m_GraphSystem);
@@ -72,9 +74,11 @@ public class ASimulationTest {
 		edgePathMapper = new Mapper<EdgePath>(EdgePath.class);
 		m_MapperNcData = new Mapper<NCCostFunction>(NCCostFunction.class);
 		m_MapperSdPare = new Mapper<SDpare>(SDpare.class);
+		m_MapperDelay = new Mapper<Delay>(Delay.class);
 		edgePathMapper.setController(controller);
 		m_MapperNcData.setController(controller);
 		m_MapperSdPare.setController(controller);
+		m_MapperDelay.setController(controller);
 
 		Mapper.initThreadlocal();
 
@@ -83,9 +87,9 @@ public class ASimulationTest {
 		m_NCSystem = new NCSystem(controller, m_GraphSystem, m_NetSys, m_RASetting, false);
 		
 		m_TopoRingSetting = new TopologyRingSettings();
-		m_TopoRingSetting.setRingSize(15);
-		m_TopoRingSetting.setBranchLength(10);
-		m_Topology = simulator.topoSelection(m_TopoRingSetting, 2);
+		m_TopoRingSetting.setRingSize(RING_SIZE);
+		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
+		m_Topology = simulator.topoSelection(m_TopoRingSetting, new Random().nextInt(3));
 		m_Topology.initGraph();
 		
 		Mapper.initThreadlocal();
@@ -132,10 +136,15 @@ public class ASimulationTest {
 
 	@Test
 	public void A_RoutingTest() throws ComponentLocationException, InterruptedException{
-		Vector<Long> runningtimes = new Vector<Long>();
 		int counter = 0;
-		int cumm_cost = 0;
-		int cumm_delay = 0;
+		//Data
+		Vector<Long> runtimeAUT = new Vector<Long>();
+		Vector<Long> runtimeCBF = new Vector<Long>();
+		Vector<Double> costAUT = new Vector<Double>();
+		Vector<Double> delayAUT = new Vector<Double>();
+		Vector<Double> costCBF = new Vector<Double>();
+		Vector<Double> delayCBF = new Vector<Double>();
+		
 		for(Entity e : entities){
 			Mapper.initThreadlocal();
 			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
@@ -143,48 +152,42 @@ public class ASimulationTest {
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
 				long t0 = System.currentTimeMillis();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
-				runningtimes.add(System.currentTimeMillis() - t0); //Running time for pre-run
+				runtimeAUT.add(System.currentTimeMillis() - t0); //Running time for pre-run
 			}
-			assertTrue(m_NCSystem.ncRequest(e));
-			runningtimes.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
+			boolean b = m_NCSystem.ncRequest(e);
+			EdgePath cbfPath = optimalSolution.runCleanAddRoute(e);
 			mm.process();
+			assertTrue(b);
+			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
+			runtimeCBF.add(optimalSolution.algrRunningTime());
 			EdgePath path = edgePathMapper.get_optimistic(e);
-			if(path == null)
+			if(path == null || !b)
 				continue;
-			cumm_cost += path.getCosts();
-			cumm_delay += path.getTime();
+			costAUT.add(path.getCosts());
+			delayAUT.add(path.getTime());
+			costCBF.add(cbfPath.getCosts());
+			delayCBF.add(cbfPath.getTime());
 			counter++;
 		}
-		long sum = 0;
-		for(long l : runningtimes)
-			sum += l;
-		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sum);
-		System.out.println("Cost : " + cumm_cost + "		Delay: " + cumm_delay);
-	}
-	
-	@Test
-	public void cbfRun(){
-		//run optimal solution for comparison
-		Vector<Long> runningtimes_ = new Vector<Long>();
-		int counter_ = 0;
-		int cumm_cost_ = 0;
-		int cumm_delay_ = 0;
-		for(Entity e : entities){
-			Mapper.initThreadlocal();
-			assertTrue(optimalSolution.addRoute(e));
-			runningtimes_.add(optimalSolution.algrRunningTime()); // Running time for addflow
-			mm.process();
-			EdgePath path = edgePathMapper.get_optimistic(e);
-			if(path == null)
-				continue;
-			cumm_cost_ += path.getCosts();
-			cumm_delay_ += path.getTime();
-			counter_++;
+		
+		//Output Result
+		long sumRuntimeAUT = 0;
+		long sumRuntimeCBF = 0;
+		double sumCostAUT = 0;
+		double sumDelayAUT = 0;
+		double sumCostCBF = 0;
+		double sumDelayCBF = 0;
+		for(int i = 0; i < counter; i++){
+			sumRuntimeAUT += runtimeAUT.get(i);
+			sumRuntimeCBF += runtimeCBF.get(i);
+			sumCostAUT += costAUT.get(i);
+			sumDelayAUT += delayAUT.get(i);
+			sumCostCBF += costCBF.get(i);
+			sumDelayCBF += delayCBF.get(i);
 		}
-		long sum_ = 0;
-		for(long l : runningtimes_)
-			sum_ += l;
-		System.out.println("CBF run " + counter_ +	" calculations: " + "total running time: " + sum_);
-		System.out.println("Cost : " + cumm_cost_ + "		Delay: " + cumm_delay_);
+		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
+		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
+		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);
+		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
 	}
 }

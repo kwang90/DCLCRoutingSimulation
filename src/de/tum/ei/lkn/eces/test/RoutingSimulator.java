@@ -9,7 +9,6 @@ import de.tum.ei.lkn.eces.dclc_routing.DCLCRouting;
 import de.tum.ei.lkn.eces.dclc_routing.ExtendedSFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.OldCBF;
 import de.tum.ei.lkn.eces.dclc_routing.SFAlgorithm;
-import de.tum.ei.lkn.eces.dclc_routing.datamodel.DCLCData;
 import de.tum.ei.lkn.eces.dclc_routing.datamodel.SDpare;
 import de.tum.ei.lkn.eces.framework.Controller;
 import de.tum.ei.lkn.eces.framework.Entity;
@@ -47,6 +46,8 @@ public class RoutingSimulator {
 			}
 		}
 		//randomly pick entities
+		if(entitySet.size() < numberOfEntities)
+			numberOfEntities = entitySet.size();
 		Vector<Entity> set = new Vector<Entity>();
 		Random r = new Random();
 		for(int i = 0; i< numberOfEntities; i++){
@@ -148,10 +149,4 @@ public class RoutingSimulator {
 		
 		return entityVec;
 	}
-	
-	public void runSimulation(DCLCRouting<? extends DCLCData> algorithm, 
-							  NetworkTopologyInterface topology, Vector<Entity> entities){
-		
-	}
-
 }
