@@ -2,7 +2,6 @@ package de.tum.ei.lkn.eces.test;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.Random;
 import java.util.Vector;
 
 import org.junit.Before;
@@ -33,10 +32,11 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
-	RoutingAlgorithm ra = RoutingAlgorithm.SF_DCLC;
-	private int RING_SIZE = 15;
-	private int BRANCH_LENTH = 10;
-	private int NUMBER_OF_ENTITIES = 1000;
+	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+	private int RING_SIZE = 150;
+	private int BRANCH_LENTH = 100;
+	private int NUMBER_OF_ENTITIES = 100;
+	private int TOPOLOTY =  2;//new Random().nextInt(3);
 	//Framework
 	private Controller controller;
 	private GraphSystem m_GraphSystem;
@@ -89,7 +89,7 @@ public class ASimulationTest {
 		m_TopoRingSetting = new TopologyRingSettings();
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
-		m_Topology = simulator.topoSelection(m_TopoRingSetting, new Random().nextInt(3));
+		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 		m_Topology.initGraph();
 		
 		Mapper.initThreadlocal();
