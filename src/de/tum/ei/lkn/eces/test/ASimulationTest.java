@@ -1,8 +1,5 @@
 package de.tum.ei.lkn.eces.test;
 
-import static org.junit.Assert.assertTrue;
-
-import java.util.Random;
 import java.util.Vector;
 
 import org.junit.Before;
@@ -36,7 +33,7 @@ public class ASimulationTest {
 	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
-	private int NUMBER_OF_ENTITIES = 1000;
+	private int NUMBER_OF_ENTITIES = 10000;
 	private int TOPOLOTY = 3;//new Random().nextInt(4);
 	//Framework
 	private Controller controller;
@@ -164,11 +161,10 @@ public class ASimulationTest {
 			boolean b = m_NCSystem.ncRequest(entities.get(i));
 			EdgePath cbfPath = optimalSolution.runCleanAddRoute(entitiesCopy.get(i));
 			mm.process();
-			assertTrue(b);
 			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
 			runtimeCBF.add(optimalSolution.algrRunningTime());
 			EdgePath path = edgePathMapper.get_optimistic(entities.get(i));
-			if(path == null || !b)
+			if(path == null || !b || cbfPath == null)
 				continue;
 			System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
 			System.out.println("AUT");
