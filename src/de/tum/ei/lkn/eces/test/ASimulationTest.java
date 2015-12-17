@@ -34,10 +34,10 @@ import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
 	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
-	private int RING_SIZE = 15;
+	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
 	private int NUMBER_OF_ENTITIES = 1000;
-	private int TOPOLOTY =  2;//new Random().nextInt(3);
+	private int TOPOLOTY = 3;//new Random().nextInt(4);
 	//Framework
 	private Controller controller;
 	private GraphSystem m_GraphSystem;
@@ -49,6 +49,7 @@ public class ASimulationTest {
 	private RoutingAlgorithmSettings m_RASetting;
 	private NetworkTopologyInterface m_Topology;
 	private Vector<Entity> entities;
+	private Vector<Entity> entitiesCopy;
 	//Mapper
 	private Mapper<EdgePath> edgePathMapper;
 	private Mapper<NCCostFunction> m_MapperNcData;
@@ -126,6 +127,10 @@ public class ASimulationTest {
 		entities = simulator.entitiesGenerator(m_Topology, NUMBER_OF_ENTITIES);
 		mm.process();
 		
+		Mapper.initThreadlocal();
+		entitiesCopy = simulator.duplicateEntities(entities);
+		mm.process();
+		
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
 			((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
 		}
@@ -146,33 +151,33 @@ public class ASimulationTest {
 		Vector<Double> costCBF = new Vector<Double>();
 		Vector<Double> delayCBF = new Vector<Double>();
 		
-		for(Entity e : entities){
+		for(int i = 0; i < entities.size(); i++){
 			Mapper.initThreadlocal();
-			Node src = m_MapperSdPare.get_optimistic(e).getSource();
-			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
+			Node src = m_MapperSdPare.get_optimistic(entities.get(i)).getSource();
+			Node dest = m_MapperSdPare.get_optimistic(entities.get(i)).getDestination();
 			//For ExtendedSF pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
 				long t0 = System.currentTimeMillis();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
 				runtimeAUT.add(System.currentTimeMillis() - t0); //Running time for pre-run
 			}
-			boolean b = m_NCSystem.ncRequest(e);
-			EdgePath cbfPath = optimalSolution.runCleanAddRoute(e);
+			boolean b = m_NCSystem.ncRequest(entities.get(i));
+			EdgePath cbfPath = optimalSolution.runCleanAddRoute(entitiesCopy.get(i));
 			mm.process();
 			assertTrue(b);
 			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
 			runtimeCBF.add(optimalSolution.algrRunningTime());
-			EdgePath path = edgePathMapper.get_optimistic(e);
+			EdgePath path = edgePathMapper.get_optimistic(entities.get(i));
 			if(path == null || !b)
 				continue;
 			System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
 			System.out.println("AUT");
 			for(Edge edge : path.getPath()){
-				System.out.print(edge.getDestination().getIdentifier() + " > ");
+				System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
 			}
 			System.out.println("\nCBF");
 			for(Edge edge : cbfPath.getPath()){
-				System.out.print(edge.getDestination().getIdentifier() + " > ");
+				System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
 			}
 			costAUT.add(path.getCosts());
 			delayAUT.add(path.getTime());

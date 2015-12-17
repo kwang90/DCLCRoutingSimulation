@@ -27,5 +27,14 @@
 	<classpathentry kind="src" path="/eces.costfunctionoptimization"/>
 	<classpathentry kind="src" path="/eces.generalDijkstra"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/eces.genMST"/>
+	<classpathentry kind="lib" path="C:/Users/ga38taw/.m2/repository/com/tinkerpop/blueprints/blueprints-core/2.6.0/blueprints-core-2.6.0.jar">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="maven.groupId" value="com.tinkerpop.blueprints"/>
+			<attribute name="maven.artifactId" value="blueprints-core"/>
+			<attribute name="maven.version" value="2.6.0"/>
+			<attribute name="maven.scope" value="compile"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

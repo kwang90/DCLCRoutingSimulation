@@ -3,6 +3,8 @@ package de.tum.ei.lkn.eces.test;
 import java.util.Random;
 import java.util.Vector;
 
+import com.tinkerpop.blueprints.Graph;
+
 import de.tum.ei.lkn.eces.dclc_routing.ConstrainedBellmanFord;
 import de.tum.ei.lkn.eces.dclc_routing.ConstrainedDijkstraAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.DCLCRouting;
@@ -20,11 +22,14 @@ import de.tum.ei.lkn.eces.networking.NetworkingSystem;
 import de.tum.ei.lkn.eces.networking.components.Delay;
 import de.tum.ei.lkn.eces.networking.components.Queue;
 import de.tum.ei.lkn.eces.networking.components.Rate;
+import de.tum.ei.lkn.eces.topologies.gml.GmlReader;
+import de.tum.ei.lkn.eces.topologies.networktopologies.GmlTopology;
 import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.networktopologies.OneRingFunnel;
 import de.tum.ei.lkn.eces.topologies.networktopologies.TwoRingFunnel;
 import de.tum.ei.lkn.eces.topologies.networktopologies.TwoRingRandom;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
+import de.tum.ei.lkn.eces.topologies.settings.TopologySettings;
 import de.tum.ei.lkn.simulation.TrafficSettings;
 
 public class RoutingSimulator {
@@ -75,6 +80,11 @@ public class RoutingSimulator {
 				m_Topology = new TwoRingRandom(controller, m_NetSys, m_TopoRingSetting);
 				top = "Tow Ring Random";
 				break;
+			case 3:
+				int num = new Random().nextInt(260);
+				m_Topology = topoZoo(m_TopoRingSetting).get(num);
+				top = "ZOO #" + num;
+				break;
 			default:
 				m_Topology = new TwoRingRandom(controller, m_NetSys, m_TopoRingSetting);
 				top = "Tow Ring Random";
@@ -82,6 +92,17 @@ public class RoutingSimulator {
 		}
 		System.out.println("Topology: " + top);
 		return m_Topology;
+	}
+	
+	public Vector<NetworkTopologyInterface> topoZoo(TopologySettings topSettings){
+		Vector<NetworkTopologyInterface> zoo = new Vector<NetworkTopologyInterface>();
+		GmlReader gmlReader = new GmlReader();
+		Vector<Graph> graphs = gmlReader.getAllGraphs("C:/Users/ga38taw/topZoo");
+		for(Graph g : graphs){
+			NetworkTopologyInterface topo = new GmlTopology(controller, m_NetSys, g, topSettings);
+			zoo.add(topo);
+		}
+		return zoo;
 	}
 	
 	
@@ -112,7 +133,6 @@ public class RoutingSimulator {
 	
 	/** from TopologySimuator */
 	public Vector<Entity[][]> getEntireEntitySet(Vector<Node> qNodesAllowedToSend, Vector<Node> qNodesAllowedToReceive) {
-		// TODO Auto-generated method stub
 		Mapper<Delay> m_oMapperDelay = new Mapper<Delay>(Delay.class);
 		Mapper<Rate> m_oMapperRate = new Mapper<Rate>(Rate.class);
 		Mapper<Queue> m_oMapperQueue = new Mapper<Queue>(Queue.class);
@@ -148,5 +168,36 @@ public class RoutingSimulator {
 		}
 		
 		return entityVec;
+	}
+
+	public Vector<Entity> duplicateEntities(Vector<Entity> origin){
+		
+		Vector<Entity> copy = new Vector<Entity>();
+		
+		Mapper<Delay> m_oMapperDelay = new Mapper<Delay>(Delay.class);
+		Mapper<Rate> m_oMapperRate = new Mapper<Rate>(Rate.class);
+		Mapper<Queue> m_oMapperQueue = new Mapper<Queue>(Queue.class);
+		Mapper<SDpare> m_oMapperSdPare = new Mapper<SDpare>(SDpare.class);
+		m_oMapperDelay.setController(controller);
+		m_oMapperRate.setController(controller);
+		m_oMapperQueue.setController(controller);
+		m_oMapperSdPare.setController(controller);
+		
+		for(Entity o : origin){
+			Delay d = m_oMapperDelay.get_optimistic(o);
+			Rate r = m_oMapperRate.get_optimistic(o);
+			Queue q = m_oMapperQueue.get_optimistic(o);
+			SDpare sd = m_oMapperSdPare.get_optimistic(o);
+						
+			Entity c = controller.generateEntity();
+			m_oMapperDelay.attatchComponent(c, d);
+			m_oMapperRate.attatchComponent(c, r);
+			m_oMapperQueue.attatchComponent(c, q);
+			m_oMapperSdPare.attatchComponent(c, sd);
+			
+			copy.add(c);
+		}
+		
+		return copy;
 	}
 }
