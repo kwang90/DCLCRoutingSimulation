@@ -2,6 +2,7 @@ package de.tum.ei.lkn.eces.test;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.Random;
 import java.util.Vector;
 
 import org.junit.Before;
@@ -33,9 +34,9 @@ import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
 	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
-	private int RING_SIZE = 150;
-	private int BRANCH_LENTH = 100;
-	private int NUMBER_OF_ENTITIES = 100;
+	private int RING_SIZE = 15;
+	private int BRANCH_LENTH = 10;
+	private int NUMBER_OF_ENTITIES = 1000;
 	private int TOPOLOTY =  2;//new Random().nextInt(3);
 	//Framework
 	private Controller controller;
@@ -147,6 +148,7 @@ public class ASimulationTest {
 		
 		for(Entity e : entities){
 			Mapper.initThreadlocal();
+			Node src = m_MapperSdPare.get_optimistic(e).getSource();
 			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
 			//For ExtendedSF pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
@@ -163,6 +165,15 @@ public class ASimulationTest {
 			EdgePath path = edgePathMapper.get_optimistic(e);
 			if(path == null || !b)
 				continue;
+			System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
+			System.out.println("AUT");
+			for(Edge edge : path.getPath()){
+				System.out.print(edge.getDestination().getIdentifier() + " > ");
+			}
+			System.out.println("\nCBF");
+			for(Edge edge : cbfPath.getPath()){
+				System.out.print(edge.getDestination().getIdentifier() + " > ");
+			}
 			costAUT.add(path.getCosts());
 			delayAUT.add(path.getTime());
 			costCBF.add(cbfPath.getCosts());
@@ -185,6 +196,7 @@ public class ASimulationTest {
 			sumCostCBF += costCBF.get(i);
 			sumDelayCBF += delayCBF.get(i);
 		}
+		System.out.println("\nResult");
 		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
 		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
 		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);

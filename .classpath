@@ -26,6 +26,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="src" path="/eces.costfunctionoptimization"/>
 	<classpathentry kind="src" path="/eces.generalDijkstra"/>
-	<classpathentry kind="src" path="/GenMST"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/eces.genMST"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
