@@ -34,7 +34,7 @@ public class ASimulationTest {
 	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
 	private int NUMBER_OF_ENTITIES = 10000;
-	private int TOPOLOTY = 3;//new Random().nextInt(4);
+	private int TOPOLOTY = 2;//new Random().nextInt(4);
 	//Framework
 	private Controller controller;
 	private GraphSystem m_GraphSystem;
@@ -140,6 +140,7 @@ public class ASimulationTest {
 	@Test
 	public void A_RoutingTest() throws ComponentLocationException, InterruptedException{
 		int counter = 0;
+		int correctCnt = 0;
 		//Data
 		Vector<Long> runtimeAUT = new Vector<Long>();
 		Vector<Long> runtimeCBF = new Vector<Long>();
@@ -175,6 +176,8 @@ public class ASimulationTest {
 			for(Edge edge : cbfPath.getPath()){
 				System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
 			}
+			if(cbfPath.getCosts() <= path.getCosts())
+				correctCnt++;
 			costAUT.add(path.getCosts());
 			delayAUT.add(path.getTime());
 			costCBF.add(cbfPath.getCosts());
@@ -198,6 +201,7 @@ public class ASimulationTest {
 			sumDelayCBF += delayCBF.get(i);
 		}
 		System.out.println("\nResult");
+		System.out.println("Correct run: " + correctCnt + " out of " + counter);
 		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
 		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
 		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);
