@@ -36,6 +36,12 @@ public class ASimulationTest {
 	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
 	private int NUMBER_OF_ENTITIES = 10000;
+	
+	/* 0: One Ring
+	 * 1: Two Ring
+	 * 2: Two Ring Random
+	 * 3: Topology Zoo
+	 * */
 	private int TOPOLOTY = 3; //new Random().nextInt(4);
 	//Logger
 	private TestLog logger;
@@ -152,7 +158,10 @@ public class ASimulationTest {
 		Vector<Double> delayCBF = new Vector<Double>();
 
 		//logging
-		logger.log(m_Topology.toString() , m_Topology.getNodesAllowedToSend().size(), m_Topology.getNodesAllowedToReceive().size());
+		logger.log(m_Topology.toString() , 
+					m_Topology.getNodesAllowedToSend().size(), 
+					m_Topology.getNodesAllowedToReceive().size(),
+					ra.toString());
 		logger.logSectionSeperater();
 		
 		for(Entity e : entities){
@@ -192,19 +201,11 @@ public class ASimulationTest {
 				System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
 			}
 			//logging AUF
-			logger.log(ra.toString(), 
-						src.getIdentifier(), 
-						dest.getIdentifier(), 
-						path.getCosts(), 
-						path.getTime(),
-						m_NCSystem.getAlgorithm().algrRunningTime());
+			logger.log("AUT", src.getIdentifier(), dest.getIdentifier(), 
+						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime());
 			//logging CBF
-			logger.log(RoutingAlgorithm.BelmanFord.toString(), 
-						src.getIdentifier(), 
-						dest.getIdentifier(), 
-						path.getCosts(), 
-						path.getTime(), 
-						m_NCSystem.getAlgorithm().algrRunningTime());
+			logger.log("CBF", src.getIdentifier(), dest.getIdentifier(), 
+						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime());
 			
 			costAUT.add(path.getCosts());
 			delayAUT.add(path.getTime());
@@ -240,6 +241,7 @@ public class ASimulationTest {
 		logger.log(RoutingAlgorithm.BelmanFord.toString(), counter, sumCostCBF, sumDelayCBF, sumRuntimeCBF);
 	}
 
+	/** run AUT to get maximum flows*/
 	@Ignore
 	@Test
 	public void B_MaxFlowTest_AUT() throws ComponentLocationException, InterruptedException{
@@ -284,6 +286,7 @@ public class ASimulationTest {
 		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
 	}
 
+	/** run CBF to get maximum flows*/
 	@Ignore
 	@Test
 	public void C_MaxFlowTest_CBF() throws ComponentLocationException, InterruptedException{

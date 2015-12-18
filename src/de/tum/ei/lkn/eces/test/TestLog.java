@@ -39,22 +39,22 @@ public class TestLog {
 		}
 	}
 	
-	public void log(String top, int NumberOfSendingNodes, int NumberOfReceivingNodes)
+	public void log(String top, int NumberOfSendingNodes, int NumberOfReceivingNodes, String AUT)
 	{
-		String log = top + ";" + NumberOfSendingNodes + ";" + NumberOfReceivingNodes;
+		String log = top + ";" + NumberOfSendingNodes + ";" + NumberOfReceivingNodes + ";" + AUT;
 		writer.println(log);
 		writer.flush();
 	}
 	
-	public void log(String AUF, long src, long dest, double Cost, double delay, long runtime)
+	public void log(String AUT, long src, long dest, double Cost, double delay, long runtime)
 	{
-		String log = AUF + ";" + src + ";"  + dest + ";" + Cost  + ";" + delay + ";" + runtime;
+		String log = AUT + ";" + src + ";"  + dest + ";" + Cost  + ";" + delay + ";" + runtime;
 		writer.println(log);
 		writer.flush();
 	}
 	
-	public void log(String AUF, int cnt, double sumCost, double sumDelay, double sumRunTime){
-		String log =  AUF + ";" + cnt + ";"  + sumCost + ";" + sumDelay  + ";" + sumRunTime;
+	public void log(String AUT, int cnt, double sumCost, double sumDelay, double sumRunTime){
+		String log =  AUT + ";" + cnt + ";"  + sumCost + ";" + sumDelay  + ";" + sumRunTime;
 		writer.println(log);
 		writer.flush();
 	}
