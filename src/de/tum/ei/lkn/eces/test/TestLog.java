@@ -10,44 +10,57 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import de.tum.ei.lkn.eces.networkcalculus.genetic.TopologieSettings.Topologie;
-
 public class TestLog {
 
 	DecimalFormat df = new DecimalFormat("#.#", new DecimalFormatSymbols(Locale.GERMAN));
 	
 	private PrintWriter writer = null;
-	private DateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+	private DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
 	private Date date = new Date();
 	private String filename = null;
 	private String path = null;
 	
-	public TestLog(Topologie top)
+	public TestLog(String testName)
 	{
-		String pathResultDirectory = "." + File.separator + ".." + File.separator + ".." + File.separator + "results";
-		
+		//create file path
+		String pathResultDirectory = "." +  File.separator + "Tests_Data";
 		if(! new File(pathResultDirectory).exists())
-		{
 			new File(pathResultDirectory).mkdir();
-		}
-		
-		filename = dateFormat.format(date).toString() + "_" + top.toString() + "_TEST" + ".csv";
-		path = "." + File.separator + ".." + File.separator + ".." + File.separator + "results" + File.separator + filename;
-		
+		filename = "ROUTINGTEST_" + testName + "_" + dateFormat.format(date).toString() + ".csv";
+		path = "." + File.separator  + "Tests_Data" + File.separator + filename;		
+		//
 		File f = new File(path);
 		try {
 			f.createNewFile();
 			writer = new PrintWriter(path, "UTF-8");
-			writer.println("RINGSIZE" + ";" + "LENGTH" + ";" + "QUEUES" + ";" + "FLOWS");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	public void log(int ringsize, int length, int queues, double flows)
+	public void log(String top, int NumberOfSendingNodes, int NumberOfReceivingNodes)
 	{
-		String log = Integer.toString(ringsize) + ";" + Integer.toString(length) + ";" + Integer.toString(queues) + ";" + df.format(flows);
+		String log = top + ";" + NumberOfSendingNodes + ";" + NumberOfReceivingNodes;
+		writer.println(log);
+		writer.flush();
+	}
+	
+	public void log(String AUF, long src, long dest, double Cost, double delay, long runtime)
+	{
+		String log = AUF + ";" + src + ";"  + dest + ";" + Cost  + ";" + delay + ";" + runtime;
+		writer.println(log);
+		writer.flush();
+	}
+	
+	public void log(String AUF, int cnt, double sumCost, double sumDelay, double sumRunTime){
+		String log =  AUF + ";" + cnt + ";"  + sumCost + ";" + sumDelay  + ";" + sumRunTime;
+		writer.println(log);
+		writer.flush();
+	}
+	
+	public void logSectionSeperater(){
+		String log =  "==========================";
 		writer.println(log);
 		writer.flush();
 	}

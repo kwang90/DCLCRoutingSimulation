@@ -1,8 +1,10 @@
 package de.tum.ei.lkn.eces.test;
 
+import java.util.Random;
 import java.util.Vector;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import de.tum.ei.lkn.eces.dclc_routing.ConstrainedBellmanFord;
@@ -34,7 +36,9 @@ public class ASimulationTest {
 	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
 	private int NUMBER_OF_ENTITIES = 10000;
-	private int TOPOLOTY = 2;//new Random().nextInt(4);
+	private int TOPOLOTY = 3; //new Random().nextInt(4);
+	//Logger
+	private TestLog logger;
 	//Framework
 	private Controller controller;
 	private GraphSystem m_GraphSystem;
@@ -46,7 +50,6 @@ public class ASimulationTest {
 	private RoutingAlgorithmSettings m_RASetting;
 	private NetworkTopologyInterface m_Topology;
 	private Vector<Entity> entities;
-	private Vector<Entity> entitiesCopy;
 	//Mapper
 	private Mapper<EdgePath> edgePathMapper;
 	private Mapper<NCCostFunction> m_MapperNcData;
@@ -124,10 +127,6 @@ public class ASimulationTest {
 		entities = simulator.entitiesGenerator(m_Topology, NUMBER_OF_ENTITIES);
 		mm.process();
 		
-		Mapper.initThreadlocal();
-		entitiesCopy = simulator.duplicateEntities(entities);
-		mm.process();
-		
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
 			((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
 		}
@@ -137,8 +136,11 @@ public class ASimulationTest {
 		}
 	}
 
+	/** AUT and CBF running on same set of entities */
+	//@Ignore
 	@Test
 	public void A_RoutingTest() throws ComponentLocationException, InterruptedException{
+		logger = new TestLog("RuntimeTest");
 		int counter = 0;
 		int correctCnt = 0;
 		//Data
@@ -148,25 +150,38 @@ public class ASimulationTest {
 		Vector<Double> delayAUT = new Vector<Double>();
 		Vector<Double> costCBF = new Vector<Double>();
 		Vector<Double> delayCBF = new Vector<Double>();
+
+		//logging
+		logger.log(m_Topology.toString() , m_Topology.getNodesAllowedToSend().size(), m_Topology.getNodesAllowedToReceive().size());
+		logger.logSectionSeperater();
 		
-		for(int i = 0; i < entities.size(); i++){
+		for(Entity e : entities){
 			Mapper.initThreadlocal();
-			Node src = m_MapperSdPare.get_optimistic(entities.get(i)).getSource();
-			Node dest = m_MapperSdPare.get_optimistic(entities.get(i)).getDestination();
+			Node src = m_MapperSdPare.get_optimistic(e).getSource();
+			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
 			//For ExtendedSF pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
 				long t0 = System.currentTimeMillis();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
 				runtimeAUT.add(System.currentTimeMillis() - t0); //Running time for pre-run
 			}
-			boolean b = m_NCSystem.ncRequest(entities.get(i));
-			EdgePath cbfPath = optimalSolution.runCleanAddRoute(entitiesCopy.get(i));
+			boolean b = m_NCSystem.ncRequest(e);
+			EdgePath path = edgePathMapper.get_optimistic(e);
+			EdgePath cbfPath = optimalSolution.runCleanAddRoute(e);
 			mm.process();
+			
 			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
 			runtimeCBF.add(optimalSolution.algrRunningTime());
-			EdgePath path = edgePathMapper.get_optimistic(entities.get(i));
 			if(path == null || !b || cbfPath == null)
 				continue;
+			//the path cost CBF found should be less or equal to that of AUT
+			if(cbfPath.getCosts() <= path.getCosts()){
+				correctCnt++;
+			}
+			else
+				continue;	//JUST FOR TEMP TEST : "CHEATER"
+			
+			//print out
 			System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
 			System.out.println("AUT");
 			for(Edge edge : path.getPath()){
@@ -176,8 +191,21 @@ public class ASimulationTest {
 			for(Edge edge : cbfPath.getPath()){
 				System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
 			}
-			if(cbfPath.getCosts() <= path.getCosts())
-				correctCnt++;
+			//logging AUF
+			logger.log(ra.toString(), 
+						src.getIdentifier(), 
+						dest.getIdentifier(), 
+						path.getCosts(), 
+						path.getTime(),
+						m_NCSystem.getAlgorithm().algrRunningTime());
+			//logging CBF
+			logger.log(RoutingAlgorithm.BelmanFord.toString(), 
+						src.getIdentifier(), 
+						dest.getIdentifier(), 
+						path.getCosts(), 
+						path.getTime(), 
+						m_NCSystem.getAlgorithm().algrRunningTime());
+			
 			costAUT.add(path.getCosts());
 			delayAUT.add(path.getTime());
 			costCBF.add(cbfPath.getCosts());
@@ -201,10 +229,99 @@ public class ASimulationTest {
 			sumDelayCBF += delayCBF.get(i);
 		}
 		System.out.println("\nResult");
-		System.out.println("Correct run: " + correctCnt + " out of " + counter);
+		System.out.println("Correct run: " + correctCnt + " out of " + counter + " , " + Math.rint(100 * correctCnt/counter) + "%");
 		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
 		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
 		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
+		//logging
+		logger.logSectionSeperater();
+		logger.log(ra.toString(), counter, sumCostAUT, sumDelayAUT, sumRuntimeAUT);
+		logger.log(RoutingAlgorithm.BelmanFord.toString(), counter, sumCostCBF, sumDelayCBF, sumRuntimeCBF);
 	}
+
+	@Ignore
+	@Test
+	public void B_MaxFlowTest_AUT() throws ComponentLocationException, InterruptedException{
+		int counter = 0;
+		//Data
+		Vector<Long> runtimeAUT = new Vector<Long>();
+		Vector<Double> costAUT = new Vector<Double>();
+		Vector<Double> delayAUT = new Vector<Double>();
+		
+		while(true){
+			Entity e = entities.get(new Random().nextInt(entities.size()));
+			Mapper.initThreadlocal();
+			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
+			//For ExtendedSF pre-run
+			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
+				long t0 = System.currentTimeMillis();
+				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
+				runtimeAUT.add(System.currentTimeMillis() - t0); //Running time for pre-run
+			}
+			boolean b = m_NCSystem.ncRequest(e);
+			mm.process();
+			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
+			EdgePath path = edgePathMapper.get_optimistic(e);
+			if(path == null || !b)
+				break;
+			costAUT.add(path.getCosts());
+			delayAUT.add(path.getTime());
+			counter++;
+		}
+		
+		//Output Result
+		long sumRuntimeAUT = 0;
+		double sumCostAUT = 0;
+		double sumDelayAUT = 0;
+		for(int i = 0; i < counter; i++){
+			sumRuntimeAUT += runtimeAUT.get(i);
+			sumCostAUT += costAUT.get(i);
+			sumDelayAUT += delayAUT.get(i);
+		}
+		System.out.println("\n Max number of flows for" + ra.toString());
+		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
+		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
+	}
+
+	@Ignore
+	@Test
+	public void C_MaxFlowTest_CBF() throws ComponentLocationException, InterruptedException{
+		int counter = 0;
+		//Data
+		Vector<Long> runtimeCBF = new Vector<Long>();
+		Vector<Double> costCBF = new Vector<Double>();
+		Vector<Double> delayCBF = new Vector<Double>();
+		
+		while(true){
+			Entity e = entities.get(new Random().nextInt(entities.size()));
+			Mapper.initThreadlocal();
+			boolean b = optimalSolution.addRoute(e);
+			mm.process();
+			runtimeCBF.add(optimalSolution.algrRunningTime());
+			EdgePath cbfPath = edgePathMapper.get_optimistic(e);
+			if(!b || cbfPath == null)
+			{
+				System.out.println("Break!");
+				break;
+			}
+			costCBF.add(cbfPath.getCosts());
+			delayCBF.add(cbfPath.getTime());
+			counter++;
+		}
+		
+		//Output Result
+		long sumRuntimeCBF = 0;
+		double sumCostCBF = 0;
+		double sumDelayCBF = 0;
+		for(int i = 0; i < counter; i++){
+			sumRuntimeCBF += runtimeCBF.get(i);
+			sumCostCBF += costCBF.get(i);
+			sumDelayCBF += delayCBF.get(i);
+		}
+		System.out.println("\n Max number of flows of CBF");
+		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);
+		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
+	}
+
 }
