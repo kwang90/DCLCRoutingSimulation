@@ -158,12 +158,14 @@ public class ASimulationTest {
 		Vector<Double> delayCBF = new Vector<Double>();
 
 		//logging
+		logger.logTitle("Topology;Sending Nodes;Receving Nodes;AUT");
 		logger.log(m_Topology.toString() , 
 					m_Topology.getNodesAllowedToSend().size(), 
 					m_Topology.getNodesAllowedToReceive().size(),
 					ra.toString());
 		logger.logSectionSeperater();
 		
+		logger.logTitle("Algorithm;Source;Destination;Cost;Delay;Running Time");
 		for(Entity e : entities){
 			Mapper.initThreadlocal();
 			Node src = m_MapperSdPare.get_optimistic(e).getSource();
@@ -237,6 +239,7 @@ public class ASimulationTest {
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
 		//logging
 		logger.logSectionSeperater();
+		logger.logTitle("Algorithm;Loop Number;Cost Sum;Delay Sum;Rumtime Sum");
 		logger.log(ra.toString(), counter, sumCostAUT, sumDelayAUT, sumRuntimeAUT);
 		logger.log(RoutingAlgorithm.BelmanFord.toString(), counter, sumCostCBF, sumDelayCBF, sumRuntimeCBF);
 	}

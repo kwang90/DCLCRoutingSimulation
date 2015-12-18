@@ -64,4 +64,9 @@ public class TestLog {
 		writer.println(log);
 		writer.flush();
 	}
+	
+	public void logTitle(String title){
+		writer.println(title);
+		writer.flush();
+	}
 }
