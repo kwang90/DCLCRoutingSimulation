@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import de.tum.ei.lkn.eces.dclc_routing.DCURAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.ConstrainedBellmanFord;
 import de.tum.ei.lkn.eces.dclc_routing.ExtendedSFAlgorithm;
 import de.tum.ei.lkn.eces.dclc_routing.SFAlgorithm;
@@ -32,7 +33,7 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
-	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+	RoutingAlgorithm ra = RoutingAlgorithm.DCUR;
 	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
 	private int NUMBER_OF_ENTITIES = 10000;
@@ -107,7 +108,8 @@ public class ASimulationTest {
 		
 		//Settings for SF and Extended_SF
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC 
-			|| m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF ){
+			|| m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF 
+			|| m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.DCUR){
 			genDijkLC = new GeneralDijkstra(controller, m_Topology.getQGraph()) {
 				@Override
 				public double getEdgeCost(Edge nxtEdge) {
@@ -139,6 +141,10 @@ public class ASimulationTest {
 		
 		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
 			((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLDRun(controller, mstLD);
+		}
+		
+		if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.DCUR){
+			((DCURAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preRunDCUR(controller, mstLC, mstLD);
 		}
 	}
 
