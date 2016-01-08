@@ -172,9 +172,9 @@ public class ASimulationTest {
 			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
 			//For ExtendedSF pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
-				long t0 = System.currentTimeMillis();
+				long t0 = System.nanoTime();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
-				runtimeAUT.add(System.currentTimeMillis() - t0); //Running time for pre-run
+				runtimeAUT.add(System.nanoTime() - t0); //Running time for pre-run
 			}
 			boolean b = m_NCSystem.ncRequest(e);
 			EdgePath path = edgePathMapper.get_optimistic(e);
