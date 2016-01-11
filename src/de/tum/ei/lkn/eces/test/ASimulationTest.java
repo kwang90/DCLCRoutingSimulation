@@ -33,7 +33,7 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
-	RoutingAlgorithm ra = RoutingAlgorithm.DCUR;
+	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
 	private int NUMBER_OF_ENTITIES = 10000;
@@ -71,6 +71,8 @@ public class ASimulationTest {
 	private RoutingSimulator simulator;
 	//CBF
 	ConstrainedBellmanFord<NCCostFunction> optimalSolution;
+	
+	Mapper<Delay> m_oMapperDelay = new Mapper<Delay>(Delay.class);
 
 	@Before
 	public void setUp(){
@@ -171,7 +173,7 @@ public class ASimulationTest {
 					ra.toString());
 		logger.logSectionSeperater();
 		
-		logger.logTitle("Algorithm;Source;Destination;Cost;Delay;Running Time");
+		logger.logTitle("Algorithm;Source;Destination;Cost;Delay;Running Time;Delay Constraint");
 		for(Entity e : entities){
 			Mapper.initThreadlocal();
 			Node src = m_MapperSdPare.get_optimistic(e).getSource();
@@ -209,10 +211,12 @@ public class ASimulationTest {
 			}
 			//logging AUF
 			logger.log("AUT", src.getIdentifier(), dest.getIdentifier(), 
-						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime());
+						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime(), 
+						m_MapperDelay.get_optimistic(e));
 			//logging CBF
 			logger.log("CBF", src.getIdentifier(), dest.getIdentifier(), 
-						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime());
+						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime(),
+						m_MapperDelay.get_optimistic(e));
 			
 			costAUT.add(path.getCosts());
 			delayAUT.add(path.getTime());

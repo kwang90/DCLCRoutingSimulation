@@ -10,6 +10,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import de.tum.ei.lkn.eces.networking.components.Delay;
+
 public class TestLog {
 
 	DecimalFormat df = new DecimalFormat("#.#", new DecimalFormatSymbols(Locale.GERMAN));
@@ -46,9 +48,9 @@ public class TestLog {
 		writer.flush();
 	}
 	
-	public void log(String AUT, long src, long dest, double Cost, double delay, long runtime)
+	public void log(String AUT, long src, long dest, double Cost, double delay, long runtime, Delay delayConstraint)
 	{
-		String log = AUT + ";" + src + ";"  + dest + ";" + Cost  + ";" + delay + ";" + runtime;
+		String log = AUT + ";" + src + ";"  + dest + ";" + Cost  + ";" + delay + ";" + runtime + ";" + delayConstraint.getDelay();
 		writer.println(log);
 		writer.flush();
 	}

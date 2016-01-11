@@ -26,8 +26,8 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="src" path="/eces.costfunctionoptimization"/>
 	<classpathentry kind="src" path="/eces.generalDijkstra"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/eces.genMST"/>
-	<classpathentry kind="lib" path="C:/Users/ga38taw/.m2/repository/com/tinkerpop/blueprints/blueprints-core/2.6.0/blueprints-core-2.6.0.jar">
+	<classpathentry combineaccessrules="false" kind="src" path="/GenMST"/>
+	<classpathentry kind="lib" path="C:/Users/Wang/.m2/repository/com/tinkerpop/blueprints/blueprints-core/2.6.0/blueprints-core-2.6.0.jar" sourcepath="C:/Users/Wang/.m2/repository/com/tinkerpop/blueprints/blueprints-core/2.6.0/blueprints-core-2.6.0-sources.jar">
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>
 			<attribute name="maven.groupId" value="com.tinkerpop.blueprints"/>
