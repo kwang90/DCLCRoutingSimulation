@@ -28,7 +28,7 @@ public class TestLog {
 		String pathResultDirectory = "." +  File.separator + "Tests_Data";
 		if(! new File(pathResultDirectory).exists())
 			new File(pathResultDirectory).mkdir();
-		filename = "ROUTINGTEST_" + testName + "_" + dateFormat.format(date).toString() + ".csv";
+		filename = testName + "_" + dateFormat.format(date).toString() + ".dat";
 		path = "." + File.separator  + "Tests_Data" + File.separator + filename;		
 		//
 		File f = new File(path);
@@ -43,20 +43,20 @@ public class TestLog {
 	
 	public void log(String top, int NumberOfSendingNodes, int NumberOfReceivingNodes, String AUT)
 	{
-		String log = top + ";" + NumberOfSendingNodes + ";" + NumberOfReceivingNodes + ";" + AUT;
+		String log = top + "," + NumberOfSendingNodes + "," + NumberOfReceivingNodes + "," + AUT;
 		writer.println(log);
 		writer.flush();
 	}
 	
 	public void log(String AUT, long src, long dest, double Cost, double delay, long runtime, Delay delayConstraint)
 	{
-		String log = AUT + ";" + src + ";"  + dest + ";" + Cost  + ";" + delay + ";" + runtime + ";" + delayConstraint.getDelay();
+		String log = AUT + "," + src + ","  + dest + "," + Cost  + "," + delay + "," + runtime + "," + delayConstraint.getDelay();
 		writer.println(log);
 		writer.flush();
 	}
 	
 	public void log(String AUT, int cnt, double sumCost, double sumDelay, double sumRunTime){
-		String log =  AUT + ";" + cnt + ";"  + sumCost + ";" + sumDelay  + ";" + sumRunTime;
+		String log =  AUT + "," + cnt + ","  + sumCost + "," + sumDelay  + "," + sumRunTime;
 		writer.println(log);
 		writer.flush();
 	}
