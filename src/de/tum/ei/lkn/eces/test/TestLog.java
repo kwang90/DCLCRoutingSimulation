@@ -28,7 +28,7 @@ public class TestLog {
 		String pathResultDirectory = "." +  File.separator + "Tests_Data";
 		if(! new File(pathResultDirectory).exists())
 			new File(pathResultDirectory).mkdir();
-		filename = testName + "_" + dateFormat.format(date).toString() + ".dat";
+		filename = testName + "_" + dateFormat.format(date).toString() + ".csv";
 		path = "." + File.separator  + "Tests_Data" + File.separator + filename;		
 		//
 		File f = new File(path);
@@ -56,7 +56,7 @@ public class TestLog {
 	}
 	
 	public void log(String AUT, int cnt, double sumCost, double sumDelay, double sumRunTime){
-		String log =  AUT + "," + cnt + ","  + sumCost + "," + sumDelay  + "," + sumRunTime;
+		String log =  AUT + "," + cnt + ","  + sumCost + "," + sumDelay  + "," + sumRunTime/1000;
 		writer.println(log);
 		writer.flush();
 	}

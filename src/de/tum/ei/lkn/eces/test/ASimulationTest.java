@@ -166,14 +166,14 @@ public class ASimulationTest {
 		Vector<Double> delayCBF = new Vector<Double>();
 
 		//logging
-		logger.logTitle("Topology;Sending Nodes;Receving Nodes;AUT");
+		logger.logTitle("Topology,Sending Nodes,Receving Nodes,AUT");
 		logger.log(m_Topology.toString() , 
 					m_Topology.getNodesAllowedToSend().size(), 
 					m_Topology.getNodesAllowedToReceive().size(),
 					ra.toString());
 		logger.logSectionSeperater();
 		
-		logger.logTitle("Algorithm;Source;Destination;Cost;Delay;Running Time;Delay Constraint");
+		logger.logTitle("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint");
 		for(Entity e : entities){
 			Mapper.initThreadlocal();
 			Node src = m_MapperSdPare.get_optimistic(e).getSource();
@@ -190,14 +190,14 @@ public class ASimulationTest {
 			mm.process();
 			
 			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
-			runtimeCBF.add(optimalSolution.algrRunningTime());
+			runtimeCBF.add(optimalSolution.algrRunningTime_clean());
 			if(path == null || !b || cbfPath == null)
 				continue;
 			//the path cost CBF found should be less or equal to that of AUT
 			if(cbfPath.getCosts() <= path.getCosts()){
 				correctCnt++;
 			}
-			else continue;	//JUST FOR TEMP TEST : "CHEATER"
+			//else continue;	//JUST FOR TEMP TEST : "CHEATER"
 			
 			//print out
 			System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
@@ -248,7 +248,7 @@ public class ASimulationTest {
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
 		//logging
 		logger.logSectionSeperater();
-		logger.logTitle("Algorithm;Loop Number;Cost Sum;Delay Sum;Rumtime Sum");
+		logger.logTitle("Algorithm,Loop Number,Cost Sum,Delay Sum,Rumtime Sum");
 		logger.log(ra.toString(), counter, sumCostAUT, sumDelayAUT, sumRuntimeAUT);
 		logger.log(RoutingAlgorithm.BelmanFord.toString(), counter, sumCostCBF, sumDelayCBF, sumRuntimeCBF);
 	}
@@ -338,5 +338,4 @@ public class ASimulationTest {
 		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
 	}
-
 }

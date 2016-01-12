@@ -30,7 +30,6 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.TwoRingFunnel;
 import de.tum.ei.lkn.eces.topologies.networktopologies.TwoRingRandom;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 import de.tum.ei.lkn.eces.topologies.settings.TopologySettings;
-import de.tum.ei.lkn.simulation.TrafficSettings;
 
 public class RoutingSimulator {
 
@@ -44,10 +43,10 @@ public class RoutingSimulator {
 	
 	public Vector<Entity> entitiesGenerator(NetworkTopologyInterface m_Topology, int numberOfEntities){
 		Vector<Entity> entitySet = new Vector<Entity>();
-		Vector<Entity[][]> entCube = getEntireEntitySet(m_Topology.getNodesAllowedToSend(), m_Topology.getNodesAllowedToReceive());
-		for(Entity[][] eArray : entCube){
-			for(int i = 0; i < 4; i++){
-				entitySet.addElement(eArray[0][i]);
+		Vector<Entity[]> entCube = getEntireEntitySet(m_Topology.getNodesAllowedToSend(), m_Topology.getNodesAllowedToReceive());
+		for(Entity[] eArray : entCube){
+			for(Entity e : eArray){
+				entitySet.addElement(e);
 			}
 		}
 		//randomly pick entities
@@ -132,7 +131,7 @@ public class RoutingSimulator {
 	}
 	
 	/** from TopologySimuator */
-	public Vector<Entity[][]> getEntireEntitySet(Vector<Node> qNodesAllowedToSend, Vector<Node> qNodesAllowedToReceive) {
+	public Vector<Entity[]> getEntireEntitySet(Vector<Node> qNodesAllowedToSend, Vector<Node> qNodesAllowedToReceive) {
 		Mapper<Delay> m_oMapperDelay = new Mapper<Delay>(Delay.class);
 		Mapper<Rate> m_oMapperRate = new Mapper<Rate>(Rate.class);
 		Mapper<Queue> m_oMapperQueue = new Mapper<Queue>(Queue.class);
@@ -143,9 +142,9 @@ public class RoutingSimulator {
 		m_oMapperQueue.setController(controller);
 		m_oMapperSdPare.setController(controller);
 		
-		Vector<Entity[][]> entityVec = new Vector<Entity[][]>();
+		Vector<Entity[]> entityVec = new Vector<Entity[]>();
 		
-		double[][] traffic = TrafficSettings.getTraffic();
+		double[][] traffic = getTraffic();
 		
 		for(int i = 0; i < qNodesAllowedToSend.size(); i++)
 		{
@@ -153,14 +152,14 @@ public class RoutingSimulator {
 			{
 				if(!qNodesAllowedToSend.get(i).equals(qNodesAllowedToReceive.get(k)))
 				{
-					Entity entity[][] = new Entity[1][7];
-					for(int j = 0; j < 7; j++)
+					Entity entity[] = new Entity[traffic.length];
+					for(int j = 0; j < traffic.length; j++)
 					{
-						entity[0][j] = controller.generateEntity();
-						m_oMapperSdPare.attatchComponent( 	entity[0][j],new SDpare(qNodesAllowedToSend.get(i),qNodesAllowedToReceive.get(k)));
-						m_oMapperDelay.attatchComponent(	entity[0][j],new Delay(traffic[j][2]));
-						m_oMapperRate.attatchComponent( 	entity[0][j],new Rate(traffic[j][0]));
-						m_oMapperQueue.attatchComponent(    entity[0][j],new Queue(traffic[j][1]));
+						entity[j] = controller.generateEntity();
+						m_oMapperSdPare.attatchComponent( 	entity[j],new SDpare(qNodesAllowedToSend.get(i),qNodesAllowedToReceive.get(k)));
+						m_oMapperDelay.attatchComponent(	entity[j],new Delay(traffic[j][2]));
+						m_oMapperRate.attatchComponent( 	entity[j],new Rate(traffic[j][0]));
+						m_oMapperQueue.attatchComponent(    entity[j],new Queue(traffic[j][1]));
 					}
 					entityVec.addElement(entity);
 				}
@@ -168,6 +167,25 @@ public class RoutingSimulator {
 		}
 		
 		return entityVec;
+	}
+
+	private double[][] getTraffic() {
+		double[][] traffic = {
+				{10000, 100, 0.010},
+				{10000, 100, 0.015},
+				{10000, 100, 0.02},
+				{10000, 100, 0.05},
+				{10000, 100, 0.075},
+				{10000, 100, 0.100},
+				{10000, 100, 0.150},
+				{10000, 100, 0.175},
+				{10000, 100, 0.200},
+				{10000, 100, 0.215},
+				{10000, 100, 0.250},
+				{10000, 100, 0.275},
+				{10000, 100, 0.300}
+				};
+		return traffic;
 	}
 
 	public Vector<Entity> duplicateEntities(Vector<Entity> origin){
