@@ -215,7 +215,7 @@ public class ASimulationTest {
 						m_MapperDelay.get_optimistic(e));
 			//logging CBF
 			logger.log("CBF", src.getIdentifier(), dest.getIdentifier(), 
-						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime(),
+					cbfPath.getCosts(), cbfPath.getTime(), optimalSolution.algrRunningTime_clean(),
 						m_MapperDelay.get_optimistic(e));
 			
 			costAUT.add(path.getCosts());

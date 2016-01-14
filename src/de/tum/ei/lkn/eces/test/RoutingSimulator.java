@@ -96,7 +96,7 @@ public class RoutingSimulator {
 	public Vector<NetworkTopologyInterface> topoZoo(TopologySettings topSettings){
 		Vector<NetworkTopologyInterface> zoo = new Vector<NetworkTopologyInterface>();
 		GmlReader gmlReader = new GmlReader();
-		Vector<Graph> graphs = gmlReader.getAllGraphs("C:/Users/ga38taw/topZoo");
+		Vector<Graph> graphs = gmlReader.getAllGraphs("D:/topZoo");
 		for(Graph g : graphs){
 			NetworkTopologyInterface topo = new GmlTopology(controller, m_NetSys, g, topSettings);
 			zoo.add(topo);

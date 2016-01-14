@@ -56,7 +56,7 @@ public class TestLog {
 	}
 	
 	public void log(String AUT, int cnt, double sumCost, double sumDelay, double sumRunTime){
-		String log =  AUT + "," + cnt + ","  + sumCost + "," + sumDelay  + "," + sumRunTime/1000;
+		String log =  AUT + "," + cnt + ","  + sumCost + "," + sumDelay  + "," + sumRunTime;
 		writer.println(log);
 		writer.flush();
 	}
