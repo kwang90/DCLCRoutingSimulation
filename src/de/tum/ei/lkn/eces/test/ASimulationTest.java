@@ -188,6 +188,12 @@ public class ASimulationTest {
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
 				runtimeAUT.add(System.nanoTime() - t0); //Running time for pre-run
 			}
+			//For SF-DCLC pre-run
+			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
+				long t0 = System.nanoTime();
+				((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
+				runtimeAUT.add(System.nanoTime() - t0); //Running time for pre-run
+			}
 			//AUT run
 			boolean b = m_NCSystem.ncRequest(e);
 			EdgePath path = edgePathMapper.get_optimistic(e);
