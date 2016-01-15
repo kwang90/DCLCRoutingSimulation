@@ -178,15 +178,17 @@ public class ASimulationTest {
 			Mapper.initThreadlocal();
 			Node src = m_MapperSdPare.get_optimistic(e).getSource();
 			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
+			//CBF clean run
+			EdgePath cbfPath = optimalSolution.runCleanAddRoute(e);
 			//For ExtendedSF pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
 				long t0 = System.nanoTime();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
 				runtimeAUT.add(System.nanoTime() - t0); //Running time for pre-run
 			}
+			//AUT run
 			boolean b = m_NCSystem.ncRequest(e);
 			EdgePath path = edgePathMapper.get_optimistic(e);
-			EdgePath cbfPath = optimalSolution.runCleanAddRoute(e);
 			mm.process();
 			
 			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
