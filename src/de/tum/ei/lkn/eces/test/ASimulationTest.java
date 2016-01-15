@@ -36,7 +36,7 @@ public class ASimulationTest {
 	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
-	private int NUMBER_OF_ENTITIES = 10000;
+	private int NUMBER_OF_ENTITIES = 5000;
 	
 	/* 0: One Ring
 	 * 1: Two Ring
@@ -174,7 +174,9 @@ public class ASimulationTest {
 		logger.logSectionSeperater();
 		
 		logger.logTitle("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint");
-		for(Entity e : entities){
+		Random r = new Random();
+		while(counter < NUMBER_OF_ENTITIES){
+			Entity e = entities.get(r.nextInt(entities.size()));
 			Mapper.initThreadlocal();
 			Node src = m_MapperSdPare.get_optimistic(e).getSource();
 			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
@@ -243,7 +245,8 @@ public class ASimulationTest {
 			sumDelayCBF += delayCBF.get(i);
 		}
 		System.out.println("\nResult");
-		System.out.println("Correct run: " + correctCnt + " out of " + counter + " , " + Math.rint(100 * correctCnt/counter) + "%");
+		if(counter != 0)
+			System.out.println("Correct run: " + correctCnt + " out of " + counter + " , " + Math.rint(100 * correctCnt/counter) + "%");
 		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
 		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
 		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);
