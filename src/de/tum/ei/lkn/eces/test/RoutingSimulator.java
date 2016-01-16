@@ -96,7 +96,7 @@ public class RoutingSimulator {
 	public Vector<NetworkTopologyInterface> topoZoo(TopologySettings topSettings){
 		Vector<NetworkTopologyInterface> zoo = new Vector<NetworkTopologyInterface>();
 		GmlReader gmlReader = new GmlReader();
-		Vector<Graph> graphs = gmlReader.getAllGraphs("C:/Users/ga38taw/topZoo");
+		Vector<Graph> graphs = gmlReader.getAllGraphs("D:/topZoo");
 		for(Graph g : graphs){
 			NetworkTopologyInterface topo = new GmlTopology(controller, m_NetSys, g, topSettings);
 			zoo.add(topo);
@@ -144,7 +144,7 @@ public class RoutingSimulator {
 		
 		Vector<Entity[]> entityVec = new Vector<Entity[]>();
 		
-		double[][] traffic = getTraffic();
+		double[][] traffic = getTraffic(0.01, 0.025, 20);
 		
 		for(int i = 0; i < qNodesAllowedToSend.size(); i++)
 		{
@@ -157,9 +157,9 @@ public class RoutingSimulator {
 					{
 						entity[j] = controller.generateEntity();
 						m_oMapperSdPare.attatchComponent( 	entity[j],new SDpare(qNodesAllowedToSend.get(i),qNodesAllowedToReceive.get(k)));
-						m_oMapperDelay.attatchComponent(	entity[j],new Delay(traffic[j][2]));
 						m_oMapperRate.attatchComponent( 	entity[j],new Rate(traffic[j][0]));
 						m_oMapperQueue.attatchComponent(    entity[j],new Queue(traffic[j][1]));
+						m_oMapperDelay.attatchComponent(	entity[j],new Delay(traffic[j][2]));
 					}
 					entityVec.addElement(entity);
 				}
@@ -169,22 +169,15 @@ public class RoutingSimulator {
 		return entityVec;
 	}
 
-	private double[][] getTraffic() {
-		double[][] traffic = {
-				{10000, 100, 0.010},
-				{10000, 100, 0.015},
-				{10000, 100, 0.02},
-				{10000, 100, 0.05},
-				{10000, 100, 0.075},
-				{10000, 100, 0.100},
-				{10000, 100, 0.150},
-				{10000, 100, 0.175},
-				{10000, 100, 0.200},
-				{10000, 100, 0.215},
-				{10000, 100, 0.250},
-				{10000, 100, 0.275},
-				{10000, 100, 0.300}
-				};
+	private double[][] getTraffic(double start, double increment, int number) {
+		double[][] traffic = new double[number][3];
+		int counter = 0;
+		for(double[] d : traffic){
+			d[0] = 10000;
+			d[1] = 100;
+			d[2] = start + counter * increment;
+			counter++;
+		}
 		return traffic;
 	}
 

@@ -33,7 +33,7 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
-	RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+	RoutingAlgorithm ra = RoutingAlgorithm.SF_DCLC;
 	private int RING_SIZE = 10;
 	private int BRANCH_LENTH = 10;
 	private int NUMBER_OF_ENTITIES = 5000;
@@ -177,6 +177,7 @@ public class ASimulationTest {
 		Random r = new Random();
 		while(counter < NUMBER_OF_ENTITIES){
 			Entity e = entities.get(r.nextInt(entities.size()));
+			long preRunningTime_AUT = 0;
 			Mapper.initThreadlocal();
 			Node src = m_MapperSdPare.get_optimistic(e).getSource();
 			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
@@ -186,29 +187,27 @@ public class ASimulationTest {
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
 				long t0 = System.nanoTime();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
-				runtimeAUT.add(System.nanoTime() - t0); //Running time for pre-run
+				preRunningTime_AUT = System.nanoTime() - t0;
 			}
 			//For SF-DCLC pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
 				long t0 = System.nanoTime();
 				((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
-				runtimeAUT.add(System.nanoTime() - t0); //Running time for pre-run
+				preRunningTime_AUT = System.nanoTime() - t0;
 			}
 			//AUT run
 			boolean b = m_NCSystem.ncRequest(e);
 			EdgePath path = edgePathMapper.get_optimistic(e);
 			mm.process();
 			
-			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
-			runtimeCBF.add(optimalSolution.algrRunningTime_clean());
 			if(path == null || !b || cbfPath == null)
 				continue;
 			//the path cost CBF found should be less or equal to that of AUT
 			if(cbfPath.getCosts() <= path.getCosts()){
 				correctCnt++;
 			}
-			//else continue;	//JUST FOR TEMP TEST : "CHEATER"
-			
+			else continue;	//JUST FOR TEMP TEST : "CHEATER"
+
 			//print out
 			System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
 			System.out.println("AUT");
@@ -221,13 +220,15 @@ public class ASimulationTest {
 			}
 			//logging AUF
 			logger.log("AUT", src.getIdentifier(), dest.getIdentifier(), 
-						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime(), 
+						path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT, 
 						m_MapperDelay.get_optimistic(e));
 			//logging CBF
 			logger.log("CBF", src.getIdentifier(), dest.getIdentifier(), 
 					cbfPath.getCosts(), cbfPath.getTime(), optimalSolution.algrRunningTime_clean(),
 						m_MapperDelay.get_optimistic(e));
 			
+			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT); 
+			runtimeCBF.add(optimalSolution.algrRunningTime_clean());
 			costAUT.add(path.getCosts());
 			delayAUT.add(path.getTime());
 			costCBF.add(cbfPath.getCosts());
@@ -242,9 +243,11 @@ public class ASimulationTest {
 		double sumDelayAUT = 0;
 		double sumCostCBF = 0;
 		double sumDelayCBF = 0;
+		for(long t : runtimeAUT)
+			sumRuntimeAUT += t;
+		for(long t : runtimeCBF)
+			sumRuntimeCBF += t;
 		for(int i = 0; i < counter; i++){
-			sumRuntimeAUT += runtimeAUT.get(i);
-			sumRuntimeCBF += runtimeCBF.get(i);
 			sumCostAUT += costAUT.get(i);
 			sumDelayAUT += delayAUT.get(i);
 			sumCostCBF += costCBF.get(i);
@@ -278,18 +281,19 @@ public class ASimulationTest {
 			Entity e = entities.get(new Random().nextInt(entities.size()));
 			Mapper.initThreadlocal();
 			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
+			long preRunningTime_AUT = 0;
 			//For ExtendedSF pre-run
 			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
 				long t0 = System.currentTimeMillis();
 				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
-				runtimeAUT.add(System.currentTimeMillis() - t0); //Running time for pre-run
+				preRunningTime_AUT = System.nanoTime() - t0;
 			}
 			boolean b = m_NCSystem.ncRequest(e);
 			mm.process();
-			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime()); // Running time for addflow
 			EdgePath path = edgePathMapper.get_optimistic(e);
 			if(path == null || !b)
 				break;
+			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT); // Running time for addflow
 			costAUT.add(path.getCosts());
 			delayAUT.add(path.getTime());
 			counter++;
@@ -324,13 +328,13 @@ public class ASimulationTest {
 			Mapper.initThreadlocal();
 			boolean b = optimalSolution.addRoute(e);
 			mm.process();
-			runtimeCBF.add(optimalSolution.algrRunningTime());
 			EdgePath cbfPath = edgePathMapper.get_optimistic(e);
 			if(!b || cbfPath == null)
 			{
 				System.out.println("Break!");
 				break;
 			}
+			runtimeCBF.add(optimalSolution.algrRunningTime());
 			costCBF.add(cbfPath.getCosts());
 			delayCBF.add(cbfPath.getTime());
 			counter++;
