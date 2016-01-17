@@ -33,17 +33,7 @@ import de.tum.ei.lkn.eces.topologies.networktopologies.NetworkTopologyInterface;
 import de.tum.ei.lkn.eces.topologies.settings.TopologyRingSettings;
 
 public class ASimulationTest {
-	RoutingAlgorithm ra = RoutingAlgorithm.SF_DCLC;
-	private int RING_SIZE = 10;
-	private int BRANCH_LENTH = 10;
-	private int NUMBER_OF_ENTITIES = 5000;
-	
-	/* 0: One Ring
-	 * 1: Two Ring
-	 * 2: Two Ring Random
-	 * 3: Topology Zoo
-	 * */
-	private int TOPOLOTY = 3; //new Random().nextInt(4);
+
 	//Logger
 	private TestLog logger;
 	//Framework
@@ -90,7 +80,9 @@ public class ASimulationTest {
 		m_MapperNcData.setController(controller);
 		m_MapperSdPare.setController(controller);
 		m_MapperDelay.setController(controller);
+	}
 
+	private void routingSetup(RoutingAlgorithm ra, int RING_SIZE, int BRANCH_LENTH, int TOPOLOTY, int NUMBER_OF_ENTITIES) {
 		Mapper.initThreadlocal();
 
 		m_RASetting = new RoutingAlgorithmSettings();
@@ -154,6 +146,20 @@ public class ASimulationTest {
 	//@Ignore
 	@Test
 	public void A_RoutingTest() throws ComponentLocationException, InterruptedException{
+				
+		/* 0: One Ring
+		 * 1: Two Ring
+		 * 2: Two Ring Random
+		 * 3: Topology Zoo
+		 * */
+		int TOPOLOTY = 3;
+		int RING_SIZE = 10;
+		int BRANCH_LENTH = 10;
+		int NUMBER_OF_ENTITIES = 5000;
+		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+		
+		routingSetup(ra, RING_SIZE, BRANCH_LENTH, TOPOLOTY, NUMBER_OF_ENTITIES);
+		
 		logger = new TestLog("RuntimeTest");
 		int counter = 0;
 		int correctCnt = 0;
@@ -271,6 +277,20 @@ public class ASimulationTest {
 	@Ignore
 	@Test
 	public void B_MaxFlowTest_AUT() throws ComponentLocationException, InterruptedException{
+		
+		/* 0: One Ring
+		 * 1: Two Ring
+		 * 2: Two Ring Random
+		 * 3: Topology Zoo
+		 * */
+		int TOPOLOTY = 3;
+		int RING_SIZE = 10;
+		int BRANCH_LENTH = 10;
+		int NUMBER_OF_ENTITIES = 5000;
+		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+		
+		routingSetup(ra, RING_SIZE, BRANCH_LENTH, TOPOLOTY, NUMBER_OF_ENTITIES);
+		
 		int counter = 0;
 		//Data
 		Vector<Long> runtimeAUT = new Vector<Long>();
@@ -317,6 +337,20 @@ public class ASimulationTest {
 	@Ignore
 	@Test
 	public void C_MaxFlowTest_CBF() throws ComponentLocationException, InterruptedException{
+		
+		/* 0: One Ring
+		 * 1: Two Ring
+		 * 2: Two Ring Random
+		 * 3: Topology Zoo
+		 * */
+		int TOPOLOTY = 3;
+		int RING_SIZE = 10;
+		int BRANCH_LENTH = 10;
+		int NUMBER_OF_ENTITIES = 5000;
+		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+		
+		routingSetup(ra, RING_SIZE, BRANCH_LENTH, TOPOLOTY, NUMBER_OF_ENTITIES);
+		
 		int counter = 0;
 		//Data
 		Vector<Long> runtimeCBF = new Vector<Long>();
