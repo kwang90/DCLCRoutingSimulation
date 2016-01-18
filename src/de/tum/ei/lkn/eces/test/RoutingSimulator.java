@@ -96,7 +96,7 @@ public class RoutingSimulator {
 	public Vector<NetworkTopologyInterface> topoZoo(TopologySettings topSettings){
 		Vector<NetworkTopologyInterface> zoo = new Vector<NetworkTopologyInterface>();
 		GmlReader gmlReader = new GmlReader();
-		Vector<Graph> graphs = gmlReader.getAllGraphs("D:/topZoo");
+		Vector<Graph> graphs = gmlReader.getAllGraphs("C:/Users/ga38taw/topZoo");
 		for(Graph g : graphs){
 			NetworkTopologyInterface topo = new GmlTopology(controller, m_NetSys, g, topSettings);
 			zoo.add(topo);
@@ -173,10 +173,9 @@ public class RoutingSimulator {
 		double[][] traffic = new double[number][3];
 		int counter = 0;
 		for(double[] d : traffic){
-			d[0] = 10000;
-			d[1] = 100;
-			d[2] = start + counter * increment;
-			counter++;
+			d[0] = 10000;	// Rate
+			d[1] = 100;		// #Queue
+			d[2] = start + counter++ * increment;	// Delay constraint
 		}
 		return traffic;
 	}

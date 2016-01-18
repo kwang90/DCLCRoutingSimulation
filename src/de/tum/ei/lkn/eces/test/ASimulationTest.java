@@ -46,6 +46,7 @@ public class ASimulationTest {
 	private TopologyRingSettings m_TopoRingSetting;
 	private RoutingAlgorithmSettings m_RASetting;
 	private NetworkTopologyInterface m_Topology;
+	private Vector<NetworkTopologyInterface> topologies;
 	private Vector<Entity> entities;
 	//Mapper
 	private Mapper<EdgePath> edgePathMapper;
@@ -83,7 +84,7 @@ public class ASimulationTest {
 		m_MapperDelay.setController(controller);
 	}
 
-	private void routingSetup(RoutingAlgorithm ra, int RING_SIZE, int BRANCH_LENTH, NetworkTopologyInterface m_Topology, int NUMBER_OF_ENTITIES) {
+	private void routingSetup(RoutingAlgorithm ra, NetworkTopologyInterface m_Topology, int NUMBER_OF_ENTITIES) {
 		Mapper.initThreadlocal();
 
 		m_RASetting = new RoutingAlgorithmSettings();
@@ -142,16 +143,17 @@ public class ASimulationTest {
 	/** AUT and CBF running on same set of entities.
 	 * 	Average cost, delay, running time, cost inefficiency according to delay constraint levels
 	 * */
-	//@Ignore
+	@Ignore
 	@Test
 	public void A_RoutingTest_DelayLevels() throws ComponentLocationException, InterruptedException{
 				
+		logger = new TestLog("RuntimeTest");
 		/* 0: One Ring
 		 * 1: Two Ring
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 2;
+		int TOPOLOTY = 3;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
@@ -161,9 +163,8 @@ public class ASimulationTest {
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 		
-		routingSetup(ra, RING_SIZE, BRANCH_LENTH, m_Topology, NUMBER_OF_ENTITIES);
+		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
 		
-		logger = new TestLog("RuntimeTest");
 		int counter = 0;
 		int correctCnt = 0;
 		//Data
@@ -276,10 +277,146 @@ public class ASimulationTest {
 		logger.log(RoutingAlgorithm.BelmanFord.toString(), counter, sumCostCBF, sumDelayCBF, sumRuntimeCBF);
 	}
 
+	//@Ignore
+	@Test
+	public void B_RoutingTest_TopoSize() throws ComponentLocationException, InterruptedException{
+		
+		logger = new TestLog("TopologyTest");
+		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;	
+
+		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
+		int NUMBER_OF_ENTITIES = 100;
+		int NUMBER_OF_TOPOS = 20;
+		Random r = new Random();
+		
+		if(TOPOLOTY == 3){
+			topologies = simulator.topoZoo(m_TopoRingSetting);
+		}
+		else{
+			for(int i = 2; i <= 10; i++){
+				m_TopoRingSetting.setRingSize(i);
+				m_TopoRingSetting.setBranchLength(i);
+				topologies.add(simulator.topoSelection(m_TopoRingSetting, TOPOLOTY));
+			}
+		}
+		
+		//logging
+		logger.logTitle("AUT," + ra.toString());
+		logger.logSectionSeperater();
+		logger.logTitle("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint,#Nodes(Sending)");
+		
+		//Data
+		Vector<Long> runtimeAUT = new Vector<Long>();
+		Vector<Long> runtimeCBF = new Vector<Long>();
+		Vector<Double> costAUT = new Vector<Double>();
+		Vector<Double> delayAUT = new Vector<Double>();
+		Vector<Double> costCBF = new Vector<Double>();
+		Vector<Double> delayCBF = new Vector<Double>();
+		
+		int topoCounter = 0;
+		
+		while(topoCounter < NUMBER_OF_TOPOS){
+			NetworkTopologyInterface top = topologies.get(r.nextInt(topologies.size()));
+			
+			routingSetup(ra, top, NUMBER_OF_ENTITIES);
+			int num_SendingNodes = top.getNodesAllowedToSend().size();
+			
+			int entityCounter = 0;
+			int correctCnt = 0;
+
+			while(entityCounter < NUMBER_OF_ENTITIES){
+				Entity e = entities.get(r.nextInt(entities.size()));
+				long preRunningTime_AUT = 0;
+				Mapper.initThreadlocal();
+				Node src = m_MapperSdPare.get_optimistic(e).getSource();
+				Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
+				//CBF clean run
+				EdgePath cbfPath = optimalSolution.runCleanAddRoute(e);
+				//For ExtendedSF pre-run
+				if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
+					long t0 = System.nanoTime();
+					((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
+					preRunningTime_AUT = System.nanoTime() - t0;
+				}
+				//For SF-DCLC pre-run
+				if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
+					long t0 = System.nanoTime();
+					((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
+					preRunningTime_AUT = System.nanoTime() - t0;
+				}
+				//AUT run
+				boolean b = m_NCSystem.ncRequest(e);
+				EdgePath path = edgePathMapper.get_optimistic(e);
+				mm.process();
+				
+				if(path == null || !b || cbfPath == null)
+					continue;
+				//the path cost CBF found should be less or equal to that of AUT
+				if(cbfPath.getCosts() <= path.getCosts()){
+					correctCnt++;
+				}
+				else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
+
+				//print out
+				System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
+				System.out.println("AUT");
+				for(Edge edge : path.getPath()){
+					System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
+				}
+				System.out.println("\nCBF");
+				for(Edge edge : cbfPath.getPath()){
+					System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
+				}
+				//logging AUF
+				logger.log("AUT", src.getIdentifier(), dest.getIdentifier(), 
+							path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT, 
+							m_MapperDelay.get_optimistic(e), num_SendingNodes);
+				//logging CBF
+				logger.log("CBF", src.getIdentifier(), dest.getIdentifier(), 
+						cbfPath.getCosts(), cbfPath.getTime(), optimalSolution.algrRunningTime_clean(),
+							m_MapperDelay.get_optimistic(e), num_SendingNodes);
+				
+				runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT); 
+				runtimeCBF.add(optimalSolution.algrRunningTime_clean());
+				costAUT.add(path.getCosts());
+				delayAUT.add(path.getTime());
+				costCBF.add(cbfPath.getCosts());
+				delayCBF.add(cbfPath.getTime());
+				entityCounter++;
+			}
+			topoCounter++;
+		}
+
+		//Output Result
+		long sumRuntimeAUT = 0;
+		long sumRuntimeCBF = 0;
+		double sumCostAUT = 0;
+		double sumDelayAUT = 0;
+		double sumCostCBF = 0;
+		double sumDelayCBF = 0;
+		for(long t : runtimeAUT)
+			sumRuntimeAUT += t;
+		for(long t : runtimeCBF)
+			sumRuntimeCBF += t;
+		for(double c : costAUT)
+			sumCostAUT += c;
+		for(double c : costCBF)
+			sumCostCBF += c;
+		for(double d : delayAUT)
+			sumDelayAUT += d;
+		for(double d : delayCBF)
+			sumDelayCBF += d;
+		
+		System.out.println("\nResult");
+		System.out.println(ra.toString() + "	Cost : " + sumCostAUT + "	Delay: " + sumDelayAUT + "	Total running time: " + sumRuntimeAUT);
+		System.out.println();
+		System.out.println("CBF	Cost : " + sumCostCBF + "	Delay: " + sumDelayCBF + " Total running time: " + sumRuntimeCBF);
+	}
+	
 	/** run AUT to get maximum flows*/
 	@Ignore
 	@Test
-	public void B_MaxFlowTest_AUT() throws ComponentLocationException, InterruptedException{
+	public void C_MaxFlowTest_AUT() throws ComponentLocationException, InterruptedException{
 		
 		/* 0: One Ring
 		 * 1: Two Ring
@@ -296,7 +433,7 @@ public class ASimulationTest {
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 		
-		routingSetup(ra, RING_SIZE, BRANCH_LENTH, m_Topology, NUMBER_OF_ENTITIES);
+		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
 		
 		int counter = 0;
 		//Data
@@ -343,7 +480,7 @@ public class ASimulationTest {
 	/** run CBF to get maximum flows*/
 	@Ignore
 	@Test
-	public void C_MaxFlowTest_CBF() throws ComponentLocationException, InterruptedException{
+	public void D_MaxFlowTest_CBF() throws ComponentLocationException, InterruptedException{
 		
 		/* 0: One Ring
 		 * 1: Two Ring
@@ -360,7 +497,7 @@ public class ASimulationTest {
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 		
-		routingSetup(ra, RING_SIZE, BRANCH_LENTH, m_Topology, NUMBER_OF_ENTITIES);
+		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
 		
 		int counter = 0;
 		//Data

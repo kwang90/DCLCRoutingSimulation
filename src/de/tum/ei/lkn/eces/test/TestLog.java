@@ -55,6 +55,13 @@ public class TestLog {
 		writer.flush();
 	}
 	
+	public void log(String AUT, long src, long dest, double Cost, double delay, long runtime, Delay delayConstraint, int NumberOfSendingNodes)
+	{
+		String log = AUT + "," + src + ","  + dest + "," + Cost  + "," + delay + "," + runtime + "," + delayConstraint.getDelay() + "," + NumberOfSendingNodes;
+		writer.println(log);
+		writer.flush();
+	}
+	
 	public void log(String AUT, int cnt, double sumCost, double sumDelay, double sumRunTime){
 		String log =  AUT + "," + cnt + ","  + sumCost + "," + sumDelay  + "," + sumRunTime;
 		writer.println(log);
