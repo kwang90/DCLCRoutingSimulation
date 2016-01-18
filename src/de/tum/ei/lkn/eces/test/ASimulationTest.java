@@ -71,6 +71,7 @@ public class ASimulationTest {
 		m_NetSys = new NetworkingSystem(controller, m_GraphSystem);
 		mm = new MapperManager(controller);
 		simulator = new RoutingSimulator(controller, m_NetSys);
+		m_TopoRingSetting = new TopologyRingSettings();
 		
 		edgePathMapper = new Mapper<EdgePath>(EdgePath.class);
 		m_MapperNcData = new Mapper<NCCostFunction>(NCCostFunction.class);
@@ -82,17 +83,13 @@ public class ASimulationTest {
 		m_MapperDelay.setController(controller);
 	}
 
-	private void routingSetup(RoutingAlgorithm ra, int RING_SIZE, int BRANCH_LENTH, int TOPOLOTY, int NUMBER_OF_ENTITIES) {
+	private void routingSetup(RoutingAlgorithm ra, int RING_SIZE, int BRANCH_LENTH, NetworkTopologyInterface m_Topology, int NUMBER_OF_ENTITIES) {
 		Mapper.initThreadlocal();
 
 		m_RASetting = new RoutingAlgorithmSettings();
 		m_RASetting.setRoutingAlgorithm(ra);
 		m_NCSystem = new NCSystem(controller, m_GraphSystem, m_NetSys, m_RASetting, false);
 		
-		m_TopoRingSetting = new TopologyRingSettings();
-		m_TopoRingSetting.setRingSize(RING_SIZE);
-		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
-		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 		m_Topology.initGraph();
 		
 		Mapper.initThreadlocal();
@@ -142,23 +139,29 @@ public class ASimulationTest {
 		}
 	}
 
-	/** AUT and CBF running on same set of entities */
+	/** AUT and CBF running on same set of entities.
+	 * 	Average cost, delay, running time, cost inefficiency according to delay constraint levels
+	 * */
 	//@Ignore
 	@Test
-	public void A_RoutingTest() throws ComponentLocationException, InterruptedException{
+	public void A_RoutingTest_DelayLevels() throws ComponentLocationException, InterruptedException{
 				
 		/* 0: One Ring
 		 * 1: Two Ring
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 3;
+		int TOPOLOTY = 2;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 		
-		routingSetup(ra, RING_SIZE, BRANCH_LENTH, TOPOLOTY, NUMBER_OF_ENTITIES);
+		m_TopoRingSetting.setRingSize(RING_SIZE);
+		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
+		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
+		
+		routingSetup(ra, RING_SIZE, BRANCH_LENTH, m_Topology, NUMBER_OF_ENTITIES);
 		
 		logger = new TestLog("RuntimeTest");
 		int counter = 0;
@@ -289,7 +292,11 @@ public class ASimulationTest {
 		int NUMBER_OF_ENTITIES = 5000;
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 		
-		routingSetup(ra, RING_SIZE, BRANCH_LENTH, TOPOLOTY, NUMBER_OF_ENTITIES);
+		m_TopoRingSetting.setRingSize(RING_SIZE);
+		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
+		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
+		
+		routingSetup(ra, RING_SIZE, BRANCH_LENTH, m_Topology, NUMBER_OF_ENTITIES);
 		
 		int counter = 0;
 		//Data
@@ -349,7 +356,11 @@ public class ASimulationTest {
 		int NUMBER_OF_ENTITIES = 5000;
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 		
-		routingSetup(ra, RING_SIZE, BRANCH_LENTH, TOPOLOTY, NUMBER_OF_ENTITIES);
+		m_TopoRingSetting.setRingSize(RING_SIZE);
+		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
+		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
+		
+		routingSetup(ra, RING_SIZE, BRANCH_LENTH, m_Topology, NUMBER_OF_ENTITIES);
 		
 		int counter = 0;
 		//Data
