@@ -176,14 +176,14 @@ public class ASimulationTest {
 		Vector<Double> delayCBF = new Vector<Double>();
 
 		//logging
-		logger.logTitle("Topology,Sending Nodes,Receving Nodes,AUT");
+		logger.logString("Topology,Sending Nodes,Receving Nodes,AUT");
 		logger.log(m_Topology.toString() , 
 					m_Topology.getNodesAllowedToSend().size(), 
 					m_Topology.getNodesAllowedToReceive().size(),
 					ra.toString());
 		logger.logSectionSeperater();
 		
-		logger.logTitle("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint");
+		logger.logString("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint");
 		Random r = new Random();
 		while(counter < NUMBER_OF_ENTITIES){
 			Entity e = entities.get(r.nextInt(entities.size()));
@@ -272,7 +272,7 @@ public class ASimulationTest {
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
 		//logging
 		logger.logSectionSeperater();
-		logger.logTitle("Algorithm,Loop Number,Cost Sum,Delay Sum,Rumtime Sum");
+		logger.logString("Algorithm,Loop Number,Cost Sum,Delay Sum,Rumtime Sum");
 		logger.log(ra.toString(), counter, sumCostAUT, sumDelayAUT, sumRuntimeAUT);
 		logger.log(RoutingAlgorithm.BelmanFord.toString(), counter, sumCostCBF, sumDelayCBF, sumRuntimeCBF);
 	}
@@ -285,7 +285,7 @@ public class ASimulationTest {
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;	
 
 		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
-		int NUMBER_OF_ENTITIES = 100;
+		int NUMBER_OF_ENTITIES = 5000;
 		int NUMBER_OF_TOPOS = 20;
 		Random r = new Random();
 		
@@ -301,9 +301,9 @@ public class ASimulationTest {
 		}
 		
 		//logging
-		logger.logTitle("AUT," + ra.toString());
-		logger.logSectionSeperater();
-		logger.logTitle("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint,#Nodes(Sending)");
+		logger.logString("AUT,Topos,EntitiesPerTop");	// Data Info
+		logger.logString(ra.toString() + "," + NUMBER_OF_TOPOS + "," + NUMBER_OF_ENTITIES);	
+		logger.logString("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint,#Nodes(Sending)");
 		
 		//Data
 		Vector<Long> runtimeAUT = new Vector<Long>();

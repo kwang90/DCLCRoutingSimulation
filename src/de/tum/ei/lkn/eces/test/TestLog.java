@@ -74,7 +74,7 @@ public class TestLog {
 		writer.flush();
 	}
 	
-	public void logTitle(String title){
+	public void logString(String title){
 		writer.println(title);
 		writer.flush();
 	}
