@@ -43,7 +43,6 @@ public class ASimulationTest {
 	private MapperManager mm;
 	private NCSystem m_NCSystem;
 	//Topology
-	private TopologyRingSettings m_TopoRingSetting;
 	private RoutingAlgorithmSettings m_RASetting;
 	private NetworkTopologyInterface m_Topology;
 	private Vector<NetworkTopologyInterface> topologies;
@@ -72,7 +71,6 @@ public class ASimulationTest {
 		m_NetSys = new NetworkingSystem(controller, m_GraphSystem);
 		mm = new MapperManager(controller);
 		simulator = new RoutingSimulator(controller, m_NetSys);
-		m_TopoRingSetting = new TopologyRingSettings();
 		
 		edgePathMapper = new Mapper<EdgePath>(EdgePath.class);
 		m_MapperNcData = new Mapper<NCCostFunction>(NCCostFunction.class);
@@ -147,7 +145,7 @@ public class ASimulationTest {
 	@Test
 	public void A_RoutingTest_DelayLevels() throws ComponentLocationException, InterruptedException{
 				
-		logger = new TestLog("RuntimeTest");
+		logger = new TestLog("Delaylevels");
 		/* 0: One Ring
 		 * 1: Two Ring
 		 * 2: Two Ring Random
@@ -158,6 +156,7 @@ public class ASimulationTest {
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
@@ -270,19 +269,15 @@ public class ASimulationTest {
 		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
 		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
-		//logging
-		logger.logSectionSeperater();
-		logger.logString("Algorithm,Loop Number,Cost Sum,Delay Sum,Rumtime Sum");
-		logger.log(ra.toString(), counter, sumCostAUT, sumDelayAUT, sumRuntimeAUT);
-		logger.log(RoutingAlgorithm.BelmanFord.toString(), counter, sumCostCBF, sumDelayCBF, sumRuntimeCBF);
 	}
 
 	//@Ignore
 	@Test
 	public void B_RoutingTest_TopoSize() throws ComponentLocationException, InterruptedException{
 		
-		logger = new TestLog("TopologyTest");
+		logger = new TestLog("TopologySize");
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;	
+		
 
 		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
 		int NUMBER_OF_ENTITIES = 5000;
@@ -290,11 +285,15 @@ public class ASimulationTest {
 		Random r = new Random();
 		
 		if(TOPOLOTY == 3){
-			topologies = simulator.topoZoo(m_TopoRingSetting);
+			topologies = simulator.topoZoo(new TopologyRingSettings());
 		}
 		else{
+			topologies = new Vector<NetworkTopologyInterface>();
+			if(TOPOLOTY == 0 || TOPOLOTY == 1)
+				NUMBER_OF_ENTITIES = 200;
 			for(int i = 2; i <= 10; i++){
-				m_TopoRingSetting.setRingSize(i);
+				TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
+				m_TopoRingSetting .setRingSize(i);
 				m_TopoRingSetting.setBranchLength(i);
 				topologies.add(simulator.topoSelection(m_TopoRingSetting, TOPOLOTY));
 			}
@@ -423,11 +422,12 @@ public class ASimulationTest {
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 3;
+		int TOPOLOTY = 1;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
@@ -492,6 +492,7 @@ public class ASimulationTest {
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
