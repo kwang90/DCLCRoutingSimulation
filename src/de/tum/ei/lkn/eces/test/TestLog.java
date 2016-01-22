@@ -55,9 +55,9 @@ public class TestLog {
 		writer.flush();
 	}
 	
-	public void log(String AUT, long src, long dest, double Cost, double delay, long runtime, Delay delayConstraint, int NumberOfSendingNodes)
+	public void log(String AUT, long src, long dest, double Cost, double delay, long runtime, int NumberOfSendingNodes)
 	{
-		String log = AUT + "," + src + ","  + dest + "," + Cost  + "," + delay + "," + runtime + "," + delayConstraint.getDelay() + "," + NumberOfSendingNodes;
+		String log = AUT + "," + src + ","  + dest + "," + Cost  + "," + delay + "," + runtime + "," + NumberOfSendingNodes;
 		writer.println(log);
 		writer.flush();
 	}

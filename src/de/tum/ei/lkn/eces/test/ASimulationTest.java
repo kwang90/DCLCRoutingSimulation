@@ -141,9 +141,9 @@ public class ASimulationTest {
 	/** AUT and CBF running on same set of entities.
 	 * 	Average cost, delay, running time, cost inefficiency according to delay constraint levels
 	 * */
-	@Ignore
+//	@Ignore
 	@Test
-	public void A_RoutingTest_DelayLevels() throws ComponentLocationException, InterruptedException{
+	public void A_DelayLevels() throws ComponentLocationException, InterruptedException{
 				
 		logger = new TestLog("Delaylevels");
 		/* 0: One Ring
@@ -179,9 +179,7 @@ public class ASimulationTest {
 		logger.log(m_Topology.toString() , 
 					m_Topology.getNodesAllowedToSend().size(), 
 					m_Topology.getNodesAllowedToReceive().size(),
-					ra.toString());
-		logger.logSectionSeperater();
-		
+					ra.toString());		
 		logger.logString("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint");
 		Random r = new Random();
 		while(counter < NUMBER_OF_ENTITIES){
@@ -271,9 +269,9 @@ public class ASimulationTest {
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
 	}
 
-	//@Ignore
+//	@Ignore
 	@Test
-	public void B_RoutingTest_TopoSize() throws ComponentLocationException, InterruptedException{
+	public void B_TopoSize() throws ComponentLocationException, InterruptedException{
 		
 		logger = new TestLog("TopologySize");
 		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;	
@@ -302,7 +300,7 @@ public class ASimulationTest {
 		//logging
 		logger.logString("AUT,Topos,EntitiesPerTop");	// Data Info
 		logger.logString(ra.toString() + "," + NUMBER_OF_TOPOS + "," + NUMBER_OF_ENTITIES);	
-		logger.logString("Algorithm,Source,Destination,Cost,Delay,Running Time,Delay Constraint,#Nodes(Sending)");
+		logger.logString("Algorithm,Source,Destination,Cost,Delay,Running Time,#Nodes(Sending)");
 		
 		//Data
 		Vector<Long> runtimeAUT = new Vector<Long>();
@@ -368,12 +366,10 @@ public class ASimulationTest {
 				}
 				//logging AUF
 				logger.log("AUT", src.getIdentifier(), dest.getIdentifier(), 
-							path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT, 
-							m_MapperDelay.get_optimistic(e), num_SendingNodes);
+							path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT, num_SendingNodes);
 				//logging CBF
 				logger.log("CBF", src.getIdentifier(), dest.getIdentifier(), 
-						cbfPath.getCosts(), cbfPath.getTime(), optimalSolution.algrRunningTime_clean(),
-							m_MapperDelay.get_optimistic(e), num_SendingNodes);
+						cbfPath.getCosts(), cbfPath.getTime(), optimalSolution.algrRunningTime_clean(), num_SendingNodes);
 				
 				runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT); 
 				runtimeCBF.add(optimalSolution.algrRunningTime_clean());
@@ -412,27 +408,219 @@ public class ASimulationTest {
 		System.out.println("CBF	Cost : " + sumCostCBF + "	Delay: " + sumDelayCBF + " Total running time: " + sumRuntimeCBF);
 	}
 	
+//	@Ignore
+	@Test
+	public void C_QueueNumber() throws ComponentLocationException, InterruptedException{
+		
+		logger = new TestLog("QueueNumbers");
+		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;	
+		
+		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
+		int RING_SIZE = 10;
+		int BRANCH_LENTH = 10;
+		int NUMBER_OF_ENTITIES = 5000;
+		int NUMBER_OF_TOPOS = 20;
+		Random r = new Random();
+		Vector<Integer> nQ = new Vector<Integer>();  
+		topologies = new Vector<NetworkTopologyInterface>();
+		
+		if(TOPOLOTY == 3){
+			for(int i = 1; i < 20; i = i + 3){
+				TopologyRingSettings set = new TopologyRingSettings();
+				set.setQueues(i);
+				for(NetworkTopologyInterface t : simulator.topoZoo(set)){
+					topologies.add(t);
+					nQ.add(i);
+				}
+			}
+		}
+		else{
+			if(TOPOLOTY == 0 || TOPOLOTY == 1)
+				NUMBER_OF_ENTITIES = 200;
+			for(int i = 1; i < 20; i = i + 3){
+				TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
+				m_TopoRingSetting .setRingSize(RING_SIZE);
+				m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
+				m_TopoRingSetting.setQueues(i);
+				topologies.add(simulator.topoSelection(m_TopoRingSetting, TOPOLOTY));
+				nQ.add(i);
+			}
+		}
+		
+		//logging
+		logger.logString("AUT,Topos,EntitiesPerTop");	// Data Info
+		logger.logString(ra.toString() + "," + NUMBER_OF_TOPOS + "," + NUMBER_OF_ENTITIES);	
+		logger.logString("Algorithm,Source,Destination,Cost,Delay,Running Time,#Queues");
+		
+		//Data
+		Vector<Long> runtimeAUT = new Vector<Long>();
+		Vector<Long> runtimeCBF = new Vector<Long>();
+		Vector<Double> costAUT = new Vector<Double>();
+		Vector<Double> delayAUT = new Vector<Double>();
+		Vector<Double> costCBF = new Vector<Double>();
+		Vector<Double> delayCBF = new Vector<Double>();
+		
+		int topoCounter = 0;
+		
+		while(topoCounter < NUMBER_OF_TOPOS){
+			NetworkTopologyInterface top = topologies.get(r.nextInt(topologies.size()));
+			
+			routingSetup(ra, top, NUMBER_OF_ENTITIES);
+			int num_queues = nQ.get(topologies.indexOf(top));
+			
+			int entityCounter = 0;
+			int correctCnt = 0;
+
+			while(entityCounter < NUMBER_OF_ENTITIES){
+				Entity e = entities.get(r.nextInt(entities.size()));
+				long preRunningTime_AUT = 0;
+				Mapper.initThreadlocal();
+				Node src = m_MapperSdPare.get_optimistic(e).getSource();
+				Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
+				//CBF clean run
+				EdgePath cbfPath = optimalSolution.runCleanAddRoute(e);
+				//For ExtendedSF pre-run
+				if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
+					long t0 = System.nanoTime();
+					((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
+					preRunningTime_AUT = System.nanoTime() - t0;
+				}
+				//For SF-DCLC pre-run
+				if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
+					long t0 = System.nanoTime();
+					((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
+					preRunningTime_AUT = System.nanoTime() - t0;
+				}
+				//AUT run
+				boolean b = m_NCSystem.ncRequest(e);
+				EdgePath path = edgePathMapper.get_optimistic(e);
+				mm.process();
+				
+				if(path == null || !b || cbfPath == null)
+					continue;
+				//the path cost CBF found should be less or equal to that of AUT
+				if(cbfPath.getCosts() <= path.getCosts()){
+					correctCnt++;
+				}
+				else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
+
+				//print out
+				System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
+				System.out.println("AUT");
+				for(Edge edge : path.getPath()){
+					System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
+				}
+				System.out.println("\nCBF");
+				for(Edge edge : cbfPath.getPath()){
+					System.out.print(edge.getSource().getIdentifier() + "-" + edge.getDestination().getIdentifier() + " > ");
+				}
+				//logging AUF
+				logger.log("AUT", src.getIdentifier(), dest.getIdentifier(), 
+							path.getCosts(), path.getTime(), m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT, num_queues);
+				//logging CBF
+				logger.log("CBF", src.getIdentifier(), dest.getIdentifier(), 
+						cbfPath.getCosts(), cbfPath.getTime(), optimalSolution.algrRunningTime_clean(), num_queues);
+				
+				runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT); 
+				runtimeCBF.add(optimalSolution.algrRunningTime_clean());
+				costAUT.add(path.getCosts());
+				delayAUT.add(path.getTime());
+				costCBF.add(cbfPath.getCosts());
+				delayCBF.add(cbfPath.getTime());
+				entityCounter++;
+			}
+			topoCounter++;
+		}
+
+		//Output Result
+		long sumRuntimeAUT = 0;
+		long sumRuntimeCBF = 0;
+		double sumCostAUT = 0;
+		double sumDelayAUT = 0;
+		double sumCostCBF = 0;
+		double sumDelayCBF = 0;
+		for(long t : runtimeAUT)
+			sumRuntimeAUT += t;
+		for(long t : runtimeCBF)
+			sumRuntimeCBF += t;
+		for(double c : costAUT)
+			sumCostAUT += c;
+		for(double c : costCBF)
+			sumCostCBF += c;
+		for(double d : delayAUT)
+			sumDelayAUT += d;
+		for(double d : delayCBF)
+			sumDelayCBF += d;
+		
+		System.out.println("\nResult");
+		System.out.println(ra.toString() + "	Cost : " + sumCostAUT + "	Delay: " + sumDelayAUT + "	Total running time: " + sumRuntimeAUT);
+		System.out.println();
+		System.out.println("CBF	Cost : " + sumCostCBF + "	Delay: " + sumDelayCBF + " Total running time: " + sumRuntimeCBF);
+	}
+
 	/** run AUT to get maximum flows*/
 	@Ignore
 	@Test
-	public void C_MaxFlowTest_AUT() throws ComponentLocationException, InterruptedException{
+	public void C_MaxFlowTest() throws ComponentLocationException, InterruptedException{
 		
 		/* 0: One Ring
 		 * 1: Two Ring
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 1;
+		int TOPOLOTY = 2;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
-		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
-		
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
+		RoutingAlgorithm ra;
+
+		// CBF Test
+		ra = RoutingAlgorithm.BelmanFord;		
+		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
 		
+		int counterCBF = 0;
+		//Data
+		Vector<Long> runtimeCBF = new Vector<Long>();
+		Vector<Double> costCBF = new Vector<Double>();
+		Vector<Double> delayCBF = new Vector<Double>();
+		
+		while(true){
+			Entity e = entities.get(new Random().nextInt(entities.size()));
+			Mapper.initThreadlocal();
+			boolean b = optimalSolution.addRoute(e);
+			mm.process();
+			EdgePath cbfPath = edgePathMapper.get_optimistic(e);
+			if(!b || cbfPath == null)
+			{
+				System.out.println("Break!");
+				break;
+			}
+			runtimeCBF.add(optimalSolution.algrRunningTime());
+			costCBF.add(cbfPath.getCosts());
+			delayCBF.add(cbfPath.getTime());
+			counterCBF++;
+		}
+		
+		//Output Result
+		long sumRuntimeCBF = 0;
+		double sumCostCBF = 0;
+		double sumDelayCBF = 0;
+		for(int i = 0; i < counterCBF; i++){
+			sumRuntimeCBF += runtimeCBF.get(i);
+			sumCostCBF += costCBF.get(i);
+			sumDelayCBF += delayCBF.get(i);
+		}
+		System.out.println("\n Max number of flows of CBF");
+		System.out.println("CBF run " + counterCBF +	" calculations: " + "total running time: " + sumRuntimeCBF);
+		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
+		
+
+		// AUT Test
+		ra = RoutingAlgorithm.DCUR;
 		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
 		
 		int counter = 0;
@@ -475,65 +663,6 @@ public class ASimulationTest {
 		System.out.println("\n Max number of flows for" + ra.toString());
 		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
 		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
-	}
-
-	/** run CBF to get maximum flows*/
-	@Ignore
-	@Test
-	public void D_MaxFlowTest_CBF() throws ComponentLocationException, InterruptedException{
-		
-		/* 0: One Ring
-		 * 1: Two Ring
-		 * 2: Two Ring Random
-		 * 3: Topology Zoo
-		 * */
-		int TOPOLOTY = 3;
-		int RING_SIZE = 10;
-		int BRANCH_LENTH = 10;
-		int NUMBER_OF_ENTITIES = 5000;
-		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
-		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
-		
-		m_TopoRingSetting.setRingSize(RING_SIZE);
-		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
-		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
-		
-		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
-		
-		int counter = 0;
-		//Data
-		Vector<Long> runtimeCBF = new Vector<Long>();
-		Vector<Double> costCBF = new Vector<Double>();
-		Vector<Double> delayCBF = new Vector<Double>();
-		
-		while(true){
-			Entity e = entities.get(new Random().nextInt(entities.size()));
-			Mapper.initThreadlocal();
-			boolean b = optimalSolution.addRoute(e);
-			mm.process();
-			EdgePath cbfPath = edgePathMapper.get_optimistic(e);
-			if(!b || cbfPath == null)
-			{
-				System.out.println("Break!");
-				break;
-			}
-			runtimeCBF.add(optimalSolution.algrRunningTime());
-			costCBF.add(cbfPath.getCosts());
-			delayCBF.add(cbfPath.getTime());
-			counter++;
-		}
-		
-		//Output Result
-		long sumRuntimeCBF = 0;
-		double sumCostCBF = 0;
-		double sumDelayCBF = 0;
-		for(int i = 0; i < counter; i++){
-			sumRuntimeCBF += runtimeCBF.get(i);
-			sumCostCBF += costCBF.get(i);
-			sumDelayCBF += delayCBF.get(i);
-		}
-		System.out.println("\n Max number of flows of CBF");
-		System.out.println("CBF run " + counter +	" calculations: " + "total running time: " + sumRuntimeCBF);
-		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
+	
 	}
 }
