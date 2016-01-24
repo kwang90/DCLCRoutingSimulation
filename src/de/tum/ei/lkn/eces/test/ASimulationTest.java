@@ -141,7 +141,7 @@ public class ASimulationTest {
 	/** AUT and CBF running on same set of entities.
 	 * 	Average cost, delay, running time, cost inefficiency according to delay constraint levels
 	 * */
-//	@Ignore
+	@Ignore
 	@Test
 	public void A_DelayLevels() throws ComponentLocationException, InterruptedException{
 				
@@ -274,7 +274,7 @@ public class ASimulationTest {
 	public void B_TopoSize() throws ComponentLocationException, InterruptedException{
 		
 		logger = new TestLog("TopologySize");
-		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;	
+		RoutingAlgorithm ra = RoutingAlgorithm.SF_DCLC;	
 		
 
 		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
@@ -288,7 +288,7 @@ public class ASimulationTest {
 		else{
 			topologies = new Vector<NetworkTopologyInterface>();
 			if(TOPOLOTY == 0 || TOPOLOTY == 1)
-				NUMBER_OF_ENTITIES = 200;
+				NUMBER_OF_ENTITIES = 500;
 			for(int i = 2; i <= 10; i++){
 				TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 				m_TopoRingSetting .setRingSize(i);
@@ -408,12 +408,12 @@ public class ASimulationTest {
 		System.out.println("CBF	Cost : " + sumCostCBF + "	Delay: " + sumDelayCBF + " Total running time: " + sumRuntimeCBF);
 	}
 	
-//	@Ignore
+	@Ignore
 	@Test
 	public void C_QueueNumber() throws ComponentLocationException, InterruptedException{
 		
 		logger = new TestLog("QueueNumbers");
-		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;	
+		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
 		
 		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
 		int RING_SIZE = 10;
@@ -561,14 +561,14 @@ public class ASimulationTest {
 	/** run AUT to get maximum flows*/
 	@Ignore
 	@Test
-	public void C_MaxFlowTest() throws ComponentLocationException, InterruptedException{
+	public void D_MaxFlowTest() throws ComponentLocationException, InterruptedException{
 		
 		/* 0: One Ring
 		 * 1: Two Ring
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 2;
+		int TOPOLOTY = 1;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
@@ -620,7 +620,7 @@ public class ASimulationTest {
 		
 
 		// AUT Test
-		ra = RoutingAlgorithm.DCUR;
+		ra = RoutingAlgorithm.Extended_SF;
 		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
 		
 		int counter = 0;
