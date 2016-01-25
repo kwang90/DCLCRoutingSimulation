@@ -155,11 +155,12 @@ public class ASimulationTest {
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
-		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
+		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
 		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
+		m_TopoRingSetting.setQueues(1);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 		
 		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
@@ -202,6 +203,13 @@ public class ASimulationTest {
 				((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
 				preRunningTime_AUT = System.nanoTime() - t0;
 			}
+			//For DCUR pre-run
+			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.DCUR){
+				long t0 = System.nanoTime();
+				((DCURAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preRunDCUR(controller, mstLC, mstLD);
+				preRunningTime_AUT = System.nanoTime() - t0;
+			}
+			
 			//AUT run
 			boolean b = m_NCSystem.ncRequest(e);
 			EdgePath path = edgePathMapper.get_optimistic(e);
@@ -274,23 +282,24 @@ public class ASimulationTest {
 	public void B_TopoSize() throws ComponentLocationException, InterruptedException{
 		
 		logger = new TestLog("TopologySize");
-		RoutingAlgorithm ra = RoutingAlgorithm.SF_DCLC;	
+		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;	
 		
 
 		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
 		int NUMBER_OF_ENTITIES = 5000;
 		int NUMBER_OF_TOPOS = 20;
 		Random r = new Random();
+		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		
 		if(TOPOLOTY == 3){
-			topologies = simulator.topoZoo(new TopologyRingSettings());
+			m_TopoRingSetting.setQueues(1);
+			topologies = simulator.topoZoo(m_TopoRingSetting);
 		}
 		else{
 			topologies = new Vector<NetworkTopologyInterface>();
 			if(TOPOLOTY == 0 || TOPOLOTY == 1)
 				NUMBER_OF_ENTITIES = 500;
 			for(int i = 2; i <= 10; i++){
-				TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 				m_TopoRingSetting .setRingSize(i);
 				m_TopoRingSetting.setBranchLength(i);
 				topologies.add(simulator.topoSelection(m_TopoRingSetting, TOPOLOTY));
@@ -559,6 +568,7 @@ public class ASimulationTest {
 	}
 
 	/** run AUT to get maximum flows*/
+//	@Ignore
 	@Ignore
 	@Test
 	public void D_MaxFlowTest() throws ComponentLocationException, InterruptedException{
@@ -568,16 +578,71 @@ public class ASimulationTest {
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 1;
+		int TOPOLOTY = 0;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
 		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
-		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
+		m_TopoRingSetting.setQueues(5);
 		RoutingAlgorithm ra;
+		
+		if(TOPOLOTY == 3)
+			m_Topology = simulator.topoZoo(m_TopoRingSetting).get(59);
+		else
+			m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 
+		// AUT Test
+		ra = RoutingAlgorithm.LARAC;
+		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
+		
+		int counter = 0;
+		//Data
+		Vector<Long> runtimeAUT = new Vector<Long>();
+		Vector<Double> costAUT = new Vector<Double>();
+		Vector<Double> delayAUT = new Vector<Double>();
+		
+		while(true){
+			Entity e = entities.get(new Random().nextInt(entities.size()));
+			Mapper.initThreadlocal();
+			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
+			long preRunningTime_AUT = 0;
+			//For ExtendedSF pre-run
+			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
+				long t0 = System.currentTimeMillis();
+				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
+				preRunningTime_AUT = System.nanoTime() - t0;
+			}
+			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
+				long t0 = System.currentTimeMillis();
+				((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
+				preRunningTime_AUT = System.nanoTime() - t0;
+			}
+			boolean b = m_NCSystem.ncRequest(e);
+			mm.process();
+			EdgePath path = edgePathMapper.get_optimistic(e);
+			if(path == null || !b)
+				break;
+			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT); // Running time for addflow
+			costAUT.add(path.getCosts());
+			delayAUT.add(path.getTime());
+			counter++;
+		}
+		
+		//Output Result
+		long sumRuntimeAUT = 0;
+		double sumCostAUT = 0;
+		double sumDelayAUT = 0;
+		for(int i = 0; i < counter; i++){
+			sumRuntimeAUT += runtimeAUT.get(i);
+			sumCostAUT += costAUT.get(i);
+			sumDelayAUT += delayAUT.get(i);
+		}
+		System.out.println("\n Max number of flows for " + ra.toString());
+		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
+		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
+	
 		// CBF Test
 		ra = RoutingAlgorithm.BelmanFord;		
 		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
@@ -618,51 +683,5 @@ public class ASimulationTest {
 		System.out.println("CBF run " + counterCBF +	" calculations: " + "total running time: " + sumRuntimeCBF);
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
 		
-
-		// AUT Test
-		ra = RoutingAlgorithm.Extended_SF;
-		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
-		
-		int counter = 0;
-		//Data
-		Vector<Long> runtimeAUT = new Vector<Long>();
-		Vector<Double> costAUT = new Vector<Double>();
-		Vector<Double> delayAUT = new Vector<Double>();
-		
-		while(true){
-			Entity e = entities.get(new Random().nextInt(entities.size()));
-			Mapper.initThreadlocal();
-			Node dest = m_MapperSdPare.get_optimistic(e).getDestination();
-			long preRunningTime_AUT = 0;
-			//For ExtendedSF pre-run
-			if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.Extended_SF){
-				long t0 = System.currentTimeMillis();
-				((ExtendedSFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preLCRun(controller, mstLC, dest);
-				preRunningTime_AUT = System.nanoTime() - t0;
-			}
-			boolean b = m_NCSystem.ncRequest(e);
-			mm.process();
-			EdgePath path = edgePathMapper.get_optimistic(e);
-			if(path == null || !b)
-				break;
-			runtimeAUT.add(m_NCSystem.getAlgorithm().algrRunningTime() + preRunningTime_AUT); // Running time for addflow
-			costAUT.add(path.getCosts());
-			delayAUT.add(path.getTime());
-			counter++;
-		}
-		
-		//Output Result
-		long sumRuntimeAUT = 0;
-		double sumCostAUT = 0;
-		double sumDelayAUT = 0;
-		for(int i = 0; i < counter; i++){
-			sumRuntimeAUT += runtimeAUT.get(i);
-			sumCostAUT += costAUT.get(i);
-			sumDelayAUT += delayAUT.get(i);
-		}
-		System.out.println("\n Max number of flows for" + ra.toString());
-		System.out.println(ra.toString() + " run " + counter +	" calculations: " + "total running time: " + sumRuntimeAUT);
-		System.out.println("Cost : " + sumCostAUT + "		Delay: " + sumDelayAUT);
-	
 	}
 }
