@@ -141,11 +141,12 @@ public class ASimulationTest {
 	/** AUT and CBF running on same set of entities.
 	 * 	Average cost, delay, running time, cost inefficiency according to delay constraint levels
 	 * */
-	@Ignore
+//	@Ignore
 	@Test
 	public void A_DelayLevels() throws ComponentLocationException, InterruptedException{
-				
-		logger = new TestLog("Delaylevels");
+
+		RoutingAlgorithm ra = RoutingAlgorithm.CDijkstra;
+		logger = new TestLog(ra.toString() + "_Delaylevels");
 		/* 0: One Ring
 		 * 1: Two Ring
 		 * 2: Two Ring Random
@@ -155,12 +156,10 @@ public class ASimulationTest {
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
-		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
 		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
-		m_TopoRingSetting.setQueues(1);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 		
 		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
@@ -277,22 +276,22 @@ public class ASimulationTest {
 		System.out.println("Cost : " + sumCostCBF + "		Delay: " + sumDelayCBF);
 	}
 
-//	@Ignore
+	@Ignore
 	@Test
 	public void B_TopoSize() throws ComponentLocationException, InterruptedException{
 		
-		logger = new TestLog("TopologySize");
-		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;	
+		RoutingAlgorithm ra = RoutingAlgorithm.DCUR;
+		logger = new TestLog(ra.toString() + "_TopologySize");	
 		
 
-		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
+		int TOPOLOTY = 2;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
 		int NUMBER_OF_ENTITIES = 5000;
 		int NUMBER_OF_TOPOS = 20;
 		Random r = new Random();
 		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		
 		if(TOPOLOTY == 3){
-			m_TopoRingSetting.setQueues(1);
+			//m_TopoRingSetting.setQueues(1);
 			topologies = simulator.topoZoo(m_TopoRingSetting);
 		}
 		else{
@@ -307,8 +306,8 @@ public class ASimulationTest {
 		}
 		
 		//logging
-		logger.logString("AUT,Topos,EntitiesPerTop");	// Data Info
-		logger.logString(ra.toString() + "," + NUMBER_OF_TOPOS + "," + NUMBER_OF_ENTITIES);	
+		logger.logString("AUT,Topos,EntitiesPerTop,TOPOLOTY");	// Data Info
+		logger.logString(ra.toString() + "," + NUMBER_OF_TOPOS + "," + NUMBER_OF_ENTITIES + "," + TOPOLOTY);	
 		logger.logString("Algorithm,Source,Destination,Cost,Delay,Running Time,#Nodes(Sending)");
 		
 		//Data
@@ -348,6 +347,12 @@ public class ASimulationTest {
 				if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
 					long t0 = System.nanoTime();
 					((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
+					preRunningTime_AUT = System.nanoTime() - t0;
+				}
+				//For DCUR pre-run
+				if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.DCUR){
+					long t0 = System.nanoTime();
+					((DCURAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preRunDCUR(controller, mstLC, mstLD);
 					preRunningTime_AUT = System.nanoTime() - t0;
 				}
 				//AUT run
@@ -420,9 +425,9 @@ public class ASimulationTest {
 	@Ignore
 	@Test
 	public void C_QueueNumber() throws ComponentLocationException, InterruptedException{
-		
-		logger = new TestLog("QueueNumbers");
-		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
+
+		RoutingAlgorithm ra = RoutingAlgorithm.DCUR;
+		logger = new TestLog(ra.toString() + "_QueueNumbers");
 		
 		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
 		int RING_SIZE = 10;
@@ -457,8 +462,8 @@ public class ASimulationTest {
 		}
 		
 		//logging
-		logger.logString("AUT,Topos,EntitiesPerTop");	// Data Info
-		logger.logString(ra.toString() + "," + NUMBER_OF_TOPOS + "," + NUMBER_OF_ENTITIES);	
+		logger.logString("AUT,Topos,EntitiesPerTop,TOPOLOTY");	// Data Info
+		logger.logString(ra.toString() + "," + NUMBER_OF_TOPOS + "," + NUMBER_OF_ENTITIES + "," + TOPOLOTY);	
 		logger.logString("Algorithm,Source,Destination,Cost,Delay,Running Time,#Queues");
 		
 		//Data
@@ -498,6 +503,12 @@ public class ASimulationTest {
 				if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.SF_DCLC){
 					long t0 = System.nanoTime();
 					((SFAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preSF(controller, mstLC, mstLD);
+					preRunningTime_AUT = System.nanoTime() - t0;
+				}
+				//For DCUR pre-run
+				if(m_RASetting.getRoutingAlgorithm() == RoutingAlgorithm.DCUR){
+					long t0 = System.nanoTime();
+					((DCURAlgorithm<NCCostFunction>)(m_NCSystem.getAlgorithm())).preRunDCUR(controller, mstLC, mstLD);
 					preRunningTime_AUT = System.nanoTime() - t0;
 				}
 				//AUT run
@@ -568,7 +579,6 @@ public class ASimulationTest {
 	}
 
 	/** run AUT to get maximum flows*/
-//	@Ignore
 	@Ignore
 	@Test
 	public void D_MaxFlowTest() throws ComponentLocationException, InterruptedException{
