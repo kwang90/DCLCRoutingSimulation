@@ -145,14 +145,14 @@ public class ASimulationTest {
 	@Test
 	public void A_DelayLevels() throws ComponentLocationException, InterruptedException{
 
-		RoutingAlgorithm ra = RoutingAlgorithm.CDijkstra;
+		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
 		logger = new TestLog(ra.toString() + "_Delaylevels");
 		/* 0: One Ring
 		 * 1: Two Ring
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 3;
+		int TOPOLOTY = 1;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
@@ -280,18 +280,17 @@ public class ASimulationTest {
 	@Test
 	public void B_TopoSize() throws ComponentLocationException, InterruptedException{
 		
-		RoutingAlgorithm ra = RoutingAlgorithm.DCUR;
+		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
 		logger = new TestLog(ra.toString() + "_TopologySize");	
 		
 
-		int TOPOLOTY = 2;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
+		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
 		int NUMBER_OF_ENTITIES = 5000;
 		int NUMBER_OF_TOPOS = 20;
 		Random r = new Random();
 		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		
 		if(TOPOLOTY == 3){
-			//m_TopoRingSetting.setQueues(1);
 			topologies = simulator.topoZoo(m_TopoRingSetting);
 		}
 		else{
@@ -426,7 +425,7 @@ public class ASimulationTest {
 	@Test
 	public void C_QueueNumber() throws ComponentLocationException, InterruptedException{
 
-		RoutingAlgorithm ra = RoutingAlgorithm.DCUR;
+		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
 		logger = new TestLog(ra.toString() + "_QueueNumbers");
 		
 		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
@@ -579,7 +578,7 @@ public class ASimulationTest {
 	}
 
 	/** run AUT to get maximum flows*/
-	@Ignore
+//	@Ignore
 	@Test
 	public void D_MaxFlowTest() throws ComponentLocationException, InterruptedException{
 		
@@ -588,14 +587,13 @@ public class ASimulationTest {
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 0;
+		int TOPOLOTY = 3;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
 		TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
-		m_TopoRingSetting.setQueues(5);
 		RoutingAlgorithm ra;
 		
 		if(TOPOLOTY == 3)
