@@ -220,7 +220,7 @@ public class ASimulationTest {
 			if(cbfPath.getCosts() <= path.getCosts()){
 				correctCnt++;
 			}
-			else continue;	//JUST FOR TEMP TEST : "CHEATER"
+			//else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
 
 			//print out
 			System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
@@ -365,7 +365,7 @@ public class ASimulationTest {
 				if(cbfPath.getCosts() <= path.getCosts()){
 					correctCnt++;
 				}
-				else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
+				//else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
 
 				//print out
 				System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
@@ -521,7 +521,7 @@ public class ASimulationTest {
 				if(cbfPath.getCosts() <= path.getCosts()){
 					correctCnt++;
 				}
-				else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
+				//else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
 
 				//print out
 				System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
