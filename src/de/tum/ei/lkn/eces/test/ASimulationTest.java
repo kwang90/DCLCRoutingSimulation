@@ -141,18 +141,18 @@ public class ASimulationTest {
 	/** AUT and CBF running on same set of entities.
 	 * 	Average cost, delay, running time, cost inefficiency according to delay constraint levels
 	 * */
-//	@Ignore
+	@Ignore
 	@Test
 	public void A_DelayLevels() throws ComponentLocationException, InterruptedException{
 
-		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
+		RoutingAlgorithm ra = RoutingAlgorithm.DCUR;
 		logger = new TestLog(ra.toString() + "_Delaylevels");
 		/* 0: One Ring
 		 * 1: Two Ring
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 1;
+		int TOPOLOTY = 3;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
@@ -160,6 +160,7 @@ public class ASimulationTest {
 		
 		m_TopoRingSetting.setRingSize(RING_SIZE);
 		m_TopoRingSetting.setBranchLength(BRANCH_LENTH);
+		m_TopoRingSetting.setQueues(10);
 		m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 		
 		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
@@ -220,7 +221,7 @@ public class ASimulationTest {
 			if(cbfPath.getCosts() <= path.getCosts()){
 				correctCnt++;
 			}
-			//else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
+			//else continue;
 
 			//print out
 			System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
@@ -261,12 +262,14 @@ public class ASimulationTest {
 			sumRuntimeAUT += t;
 		for(long t : runtimeCBF)
 			sumRuntimeCBF += t;
-		for(int i = 0; i < counter; i++){
-			sumCostAUT += costAUT.get(i);
-			sumDelayAUT += delayAUT.get(i);
-			sumCostCBF += costCBF.get(i);
-			sumDelayCBF += delayCBF.get(i);
-		}
+		for(double c : costAUT)
+			sumCostAUT += c;
+		for(double c : costCBF)
+			sumCostCBF += c;
+		for(double d : delayAUT)
+			sumDelayAUT += d;
+		for(double d : delayCBF)
+			sumDelayCBF += d;
 		System.out.println("\nResult");
 		if(counter != 0)
 			System.out.println("Correct run: " + correctCnt + " out of " + counter + " , " + Math.rint(100 * correctCnt/counter) + "%");
@@ -280,7 +283,7 @@ public class ASimulationTest {
 	@Test
 	public void B_TopoSize() throws ComponentLocationException, InterruptedException{
 		
-		RoutingAlgorithm ra = RoutingAlgorithm.LARAC;
+		RoutingAlgorithm ra = RoutingAlgorithm.Extended_SF;
 		logger = new TestLog(ra.toString() + "_TopologySize");	
 		
 
@@ -296,7 +299,7 @@ public class ASimulationTest {
 		else{
 			topologies = new Vector<NetworkTopologyInterface>();
 			if(TOPOLOTY == 0 || TOPOLOTY == 1)
-				NUMBER_OF_ENTITIES = 500;
+				NUMBER_OF_ENTITIES = 5;
 			for(int i = 2; i <= 10; i++){
 				m_TopoRingSetting .setRingSize(i);
 				m_TopoRingSetting.setBranchLength(i);
@@ -365,7 +368,7 @@ public class ASimulationTest {
 				if(cbfPath.getCosts() <= path.getCosts()){
 					correctCnt++;
 				}
-				//else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
+				//else continue;
 
 				//print out
 				System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
@@ -431,7 +434,7 @@ public class ASimulationTest {
 		int TOPOLOTY = 3;	/* 0: One Ring,	1: Two Ring,	2: Two Ring Random,	3: Topology Zoo */
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
-		int NUMBER_OF_ENTITIES = 5000;
+		int NUMBER_OF_ENTITIES = 50;
 		int NUMBER_OF_TOPOS = 20;
 		Random r = new Random();
 		Vector<Integer> nQ = new Vector<Integer>();  
@@ -449,7 +452,7 @@ public class ASimulationTest {
 		}
 		else{
 			if(TOPOLOTY == 0 || TOPOLOTY == 1)
-				NUMBER_OF_ENTITIES = 200;
+				NUMBER_OF_ENTITIES = 50;
 			for(int i = 1; i < 20; i = i + 3){
 				TopologyRingSettings m_TopoRingSetting = new TopologyRingSettings();
 				m_TopoRingSetting .setRingSize(RING_SIZE);
@@ -515,13 +518,15 @@ public class ASimulationTest {
 				EdgePath path = edgePathMapper.get_optimistic(e);
 				mm.process();
 				
-				if(path == null || !b || cbfPath == null)
+				if(path == null || !b || cbfPath == null){
+					System.out.println("Continue!");
 					continue;
-				//the path cost CBF found should be less or equal to that of AUT
+				}
+									//the path cost CBF found should be less or equal to that of AUT
 				if(cbfPath.getCosts() <= path.getCosts()){
 					correctCnt++;
 				}
-				//else continue;	//"ZUOBIQI" JUST FOR TEMP TEST
+				//else continue;
 
 				//print out
 				System.out.println("\n" + src.getIdentifier() + " -> " + dest.getIdentifier() + " : ");
@@ -587,7 +592,7 @@ public class ASimulationTest {
 		 * 2: Two Ring Random
 		 * 3: Topology Zoo
 		 * */
-		int TOPOLOTY = 3;
+		int TOPOLOTY = 0;
 		int RING_SIZE = 10;
 		int BRANCH_LENTH = 10;
 		int NUMBER_OF_ENTITIES = 5000;
@@ -602,7 +607,7 @@ public class ASimulationTest {
 			m_Topology = simulator.topoSelection(m_TopoRingSetting, TOPOLOTY);
 
 		// AUT Test
-		ra = RoutingAlgorithm.LARAC;
+		ra = RoutingAlgorithm.DCUR;
 		routingSetup(ra, m_Topology, NUMBER_OF_ENTITIES);
 		
 		int counter = 0;
